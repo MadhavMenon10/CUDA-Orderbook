@@ -1,9 +1,11 @@
 #pragma once
 #include <array>
 #include <climits>
+#include <cstddef>
 
 // The different order types that can be called in the order book
-enum class OrderType : char {
+enum class MessageType : char
+{
     Add = 'A',
     AddWithMPID = 'F',
     Execute = 'E',
@@ -30,8 +32,8 @@ inline std::array<size_t, 256> build_message_lengths() {
     message_lengths[static_cast<unsigned char>('I')] = 50;
     message_lengths[static_cast<unsigned char>('J')] = 35;
     message_lengths[static_cast<unsigned char>('K')] = 28;
-    // No 'M'
     message_lengths[static_cast<unsigned char>('L')] = 26;
+    // No 'M'
     message_lengths[static_cast<unsigned char>('N')] = 20;
     message_lengths[static_cast<unsigned char>('O')] = 48;
     message_lengths[static_cast<unsigned char>('P')] = 44;
