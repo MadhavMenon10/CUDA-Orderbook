@@ -2,6 +2,7 @@
 #include <array>
 #include <climits>
 #include <cstddef>
+#include <cstdint>
 
 // The different order types that can be called in the order book
 enum class MessageType : char
@@ -15,11 +16,21 @@ enum class MessageType : char
     Replace = 'U'
 };
 
+struct DecodedOrder {
+    MessageType order_type;
+    std::uint64_t order_id;
+    std::uint32_t price;
+    std::uint32_t quantity;
+    std::uint64_t timestamp;
+    char side;
+    std::uint16_t symbol_id;
+};
+
 inline std::array<size_t, 256> build_message_lengths() {
     std::array<size_t, 256> message_lengths;
     message_lengths.fill(SIZE_MAX);
     // Initialises the lengths of each ITCH message indexed by the message type
-    // Lengths came from https://www.nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/NQTVITCHSpecification.pdf
+    // Lengths obtained from https://www.nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/NQTVITCHSpecification.pdf
     message_lengths[static_cast<unsigned char>('A')] = 36;
     message_lengths[static_cast<unsigned char>('B')] = 19;
     message_lengths[static_cast<unsigned char>('C')] = 36;
