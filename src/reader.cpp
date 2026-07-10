@@ -1,4 +1,4 @@
-#include "reader.hpp"
+#include "../includes/reader.hpp"
 
 ItchReader::ItchReader(const std::string& file_path, size_t buffer_size) : buffer_(buffer_size), file_(file_path), buffer_pos_(0), buffer_valid_(0) {
     if (!file_.is_open()) {

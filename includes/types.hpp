@@ -8,7 +8,6 @@
 enum class MessageType : char
 {
     Add = 'A',
-    AddWithMPID = 'F',
     Execute = 'E',
     ExecuteWithPrice = 'C',
     Cancel = 'X',
@@ -17,13 +16,14 @@ enum class MessageType : char
 };
 
 struct DecodedOrder {
-    MessageType order_type;
     std::uint64_t order_id;
+    std::uint64_t old_order_id; // Used only for the Replace order
+    std::uint64_t timestamp;
     std::uint32_t price;
     std::uint32_t quantity;
-    std::uint64_t timestamp;
-    char side;
     std::uint16_t symbol_id;
+    MessageType order_type; // 1B
+    char side;
 };
 
 inline std::array<size_t, 256> build_message_lengths() {
