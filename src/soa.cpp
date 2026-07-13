@@ -40,9 +40,9 @@ SoaArrays::~SoaArrays()
     capacity_ = 0;
 }
 
-void SoaArrays::check_cuda_memalloc_error(const cudaError_t cuda_error, const std::string& name) {
-    if (cuda_error != :cudaSuccess) {
-        throw std::runtime_error("Unsuccessful memory allocation for array: " + name);
+void SoaArrays::check_cuda_memalloc_error(const cudaError_t cuda_error, const std::string& array_name) {
+    if (cuda_error != cudaSuccess) {
+        throw std::runtime_error("Unsuccessful memory allocation for array: " + array_name);
     }
 }
 
