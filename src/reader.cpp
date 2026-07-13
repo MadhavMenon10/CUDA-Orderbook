@@ -47,4 +47,11 @@ bool ItchReader::get_next_message(uint8_t* memory_space, size_t memory_size, siz
     return true;
 }
 
+void ItchReader::reset_state() {
+    file_.clear();
+    file_.seekg(0, std::ios::beg);
+    buffer_pos_ = 0;
+    buffer_valid_ = 0;
+}
+
 
