@@ -96,7 +96,9 @@ __device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_i
             if (atomicCAS(&order_ids[hash_index], order_id, TOMBSTONE_SENTINEL) == order_id) {
                 deleted = true;
             }
-            break;
+            // We retry at the same slot as atomicCAS failed because another thread changed this slot between our read and our swap
+            // We do not increment hash_index or slots_checked to retry at the same slot
+            continue;
         } else if (order_ids[hash_index] == EMPTY_SLOT_SENTINEL) {
             break;
         } else {
