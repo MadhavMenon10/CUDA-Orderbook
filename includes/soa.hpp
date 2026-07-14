@@ -1,11 +1,15 @@
 #pragma once
 #include "types.hpp"
-#include "cuda_runtime.h"
+#include "cuda_utils.hpp"
 
 class SoaArrays {
     public:
         SoaArrays();
         ~SoaArrays();
+        SoaArrays(const SoaArrays&) = delete;
+        SoaArrays& operator=(const SoaArrays&) = delete;
+        SoaArrays(SoaArrays&&) = delete;
+        SoaArrays& operator=(SoaArrays&&) = delete;
         void append(const DecodedOrder& decoded_order);
         void reserve(const size_t message_count);
 
@@ -20,5 +24,4 @@ class SoaArrays {
         char* sides_;
         size_t size_;
         size_t capacity_;
-        void check_cuda_memalloc_error(const cudaError_t cuda_error, const std::string& array_name);
 };

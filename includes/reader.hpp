@@ -7,11 +7,15 @@
 #include <string>
 #include <stdexcept>
 
-
 class ItchReader {
     public:
-        ItchReader(const std::string& file_path, size_t buffer_size);
-        bool get_next_message(uint8_t* memory_space, size_t memory_size, size_t& message_size);
+        ItchReader(const std::string &file_path, size_t buffer_size);
+        ItchReader(const ItchReader &) = delete;
+        ItchReader &operator=(const ItchReader &) = delete;
+        ItchReader(ItchReader &&) = delete;
+        ItchReader &operator=(ItchReader &&) = delete;
+        bool get_next_message(uint8_t *memory_space, size_t memory_size, size_t &message_size);
+
     private:
         size_t num_bytes_available() const;
         void refill();
@@ -20,4 +24,3 @@ class ItchReader {
         size_t buffer_pos_;
         size_t buffer_valid_;
 };
-
