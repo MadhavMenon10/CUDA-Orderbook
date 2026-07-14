@@ -2,6 +2,7 @@
 #include "soa.hpp"
 #include "cuda_utils.hpp"
 #include <cstdint>
+#include <cub/cub.h>
 
 class SymbolCompactor {
     public:
@@ -25,3 +26,10 @@ class SymbolCompactor {
         size_t* symbol_counts_;
         size_t num_distinct_symbols_;
 };
+
+// template <typename T>
+// void gather_field(const T* source_ptr, const T* dest_ptr, const thrust::device_vector<T>& map_vector, size_t count) {
+//     thrust::device_vector<const T> src_ptr(source_ptr);
+//     thrust::device_vector<const T> dst_ptr(dest_ptr);
+//     thrust::gather(map.begin(), map.end(), src_ptr, dst_ptr);
+// }
