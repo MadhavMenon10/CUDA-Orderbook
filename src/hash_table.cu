@@ -37,7 +37,23 @@ __device__ std::uint64_t hash(std::uint64_t order_id) {
     return hashed_order_id ^ (hashed_order_id >> 31);                             /* return the variable xored with itself right bit shifted 31 */
 }
 
+
+
 __global__ void insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity) {
     std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
-    
+    std::uint64_t empty_slot_sentinel = UINT64_MAX;
+    std::uint64_t tombstone_sentinel = UINT64_MAX - 1;
+    bool written = false;
+    while (!written) {
+        if (atomicCAS(&order_ids[hash_index], empty_slot_sentinel, order_id) == empty_slot_sentinel) {
+            insert_into_hash_index(order_quantity, order_price, order_symbol_id, order_side, quantities, prices, symbol_ids, sides, hash_index);
+            written = true;
+        } else if (atomicCAS(&order_ids[hash_index], tombstone_sentinel, order_id) == tombstone_sentinel) {
+            insert_into_hash_index(order_quantity, order_price, order_symbol_id, order_side, quantities, prices, symbol_ids, sides, hash_index);
+            written = true;
+        } else {
+            hash_index = (hash_index + 1) % hash_table_capacity;
+        }
+    }
+    return;
 }
