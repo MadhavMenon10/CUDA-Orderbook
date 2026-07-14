@@ -1,4 +1,4 @@
-#include "../includes/decoder.hpp"
+#include "decoder.hpp"
 
 std::uint16_t ItchDecoder::read_be_u16(const std::uint8_t *buffer, size_t offset)
 {

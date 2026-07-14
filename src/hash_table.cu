@@ -37,23 +37,49 @@ __device__ std::uint64_t hash(std::uint64_t order_id) {
     return hashed_order_id ^ (hashed_order_id >> 31);                             /* return the variable xored with itself right bit shifted 31 */
 }
 
-
-
-__global__ void insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity) {
+__device__ bool insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity) {
     std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
-    std::uint64_t empty_slot_sentinel = UINT64_MAX;
-    std::uint64_t tombstone_sentinel = UINT64_MAX - 1;
+    size_t slots_checked = 0;
     bool written = false;
     while (!written) {
-        if (atomicCAS(&order_ids[hash_index], empty_slot_sentinel, order_id) == empty_slot_sentinel) {
+        if (slots_checked >= hash_table_capacity) {
+            break;
+        }
+        if (atomicCAS(&order_ids[hash_index], EMPTY_SLOT_SENTINEL, order_id) == EMPTY_SLOT_SENTINEL) {
             insert_into_hash_index(order_quantity, order_price, order_symbol_id, order_side, quantities, prices, symbol_ids, sides, hash_index);
             written = true;
-        } else if (atomicCAS(&order_ids[hash_index], tombstone_sentinel, order_id) == tombstone_sentinel) {
+        } else if (atomicCAS(&order_ids[hash_index], TOMBSTONE_SENTINEL, order_id) == TOMBSTONE_SENTINEL) {
             insert_into_hash_index(order_quantity, order_price, order_symbol_id, order_side, quantities, prices, symbol_ids, sides, hash_index);
             written = true;
         } else {
             hash_index = (hash_index + 1) % hash_table_capacity;
+            ++slots_checked;
         }
     }
-    return;
+    return written;
+}
+
+__device__ bool lookup(std::uint64_t order_id, const std::uint64_t* order_ids, const std::uint32_t* quantities, const std::uint32_t* prices, const std::uint16_t* symbol_ids, const char* sides, size_t hash_table_capacity, HashTableEntry& lookup_value) {
+    std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
+    size_t slots_checked = 0; // Hash table not empty and desired key is not present 
+    bool found = false;
+    while (!found) {
+        if (slots_checked >= hash_table_capacity) {
+            break;
+        }
+        if (order_ids[hash_index] == order_id) {
+            lookup_value.quantity = quantities[hash_index];
+            lookup_value.price = prices[hash_index];
+            lookup_value.symbol_id = symbol_ids[hash_index];
+            lookup_value.side = sides[hash_index];
+            found = true;
+            break;
+        } else if (order_ids[hash_index] == EMPTY_SLOT_SENTINEL) {
+            break;
+        } else {
+            hash_index = (hash_index + 1) % hash_table_capacity;
+            ++slots_checked;
+        }
+    }
+    return found;
 }
