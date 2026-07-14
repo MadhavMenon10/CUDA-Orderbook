@@ -45,11 +45,11 @@ struct HashTableEntry {
 
 __device__ std::uint64_t hash(std::uint64_t order_id);
 
-__device__ bool insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity);
+__device__ bool hash_table_insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity);
 
+__device__ bool hash_table_lookup(std::uint64_t order_id, const std::uint64_t* order_ids, const std::uint32_t* quantities, const std::uint32_t* prices, const std::uint16_t* symbol_ids, const char* sides, size_t hash_table_capacity, HashTableEntry& lookup_value);
 
-__device__ bool lookup(std::uint64_t order_id, const std::uint64_t* order_ids, const std::uint32_t* quantities, const std::uint32_t* prices, const std::uint16_t* symbol_ids, const char* sides, size_t hash_table_capacity, HashTableEntry& lookup_value);
-
+__device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_ids, size_t hash_table_capacity);
 
 inline __device__ void insert_into_hash_index(std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, std::uint64_t hash_index) {
     quantities[hash_index] = order_quantity;

@@ -37,7 +37,7 @@ __device__ std::uint64_t hash(std::uint64_t order_id) {
     return hashed_order_id ^ (hashed_order_id >> 31);                             /* return the variable xored with itself right bit shifted 31 */
 }
 
-__device__ bool insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity) {
+__device__ bool hash_table_insert(std::uint64_t order_id, std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint64_t* order_ids, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, size_t hash_table_capacity) {
     std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
     size_t slots_checked = 0;
     bool written = false;
@@ -59,7 +59,7 @@ __device__ bool insert(std::uint64_t order_id, std::uint32_t order_quantity, std
     return written;
 }
 
-__device__ bool lookup(std::uint64_t order_id, const std::uint64_t* order_ids, const std::uint32_t* quantities, const std::uint32_t* prices, const std::uint16_t* symbol_ids, const char* sides, size_t hash_table_capacity, HashTableEntry& lookup_value) {
+__device__ bool hash_table_lookup(std::uint64_t order_id, const std::uint64_t* order_ids, const std::uint32_t* quantities, const std::uint32_t* prices, const std::uint16_t* symbol_ids, const char* sides, size_t hash_table_capacity, HashTableEntry& lookup_value) {
     std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
     size_t slots_checked = 0; // Hash table not empty and desired key is not present 
     bool found = false;
@@ -82,4 +82,27 @@ __device__ bool lookup(std::uint64_t order_id, const std::uint64_t* order_ids, c
         }
     }
     return found;
+}
+
+__device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_ids, size_t hash_table_capacity) {
+    std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
+    size_t slots_checked = 0;
+    bool deleted = false;
+    while (!deleted) {
+        if (slots_checked >= hash_table_capacity) {
+            break;
+        }
+        if (order_ids[hash_index] == order_id) {
+            if (atomicCAS(&order_ids[hash_index], order_id, TOMBSTONE_SENTINEL) == order_id) {
+                deleted = true;
+            }
+            break;
+        } else if (order_ids[hash_index] == EMPTY_SLOT_SENTINEL) {
+            break;
+        } else {
+            hash_index = (hash_index + 1) % hash_table_capacity;
+            ++slots_checked;
+        }
+    }
+    return deleted;
 }
