@@ -24,12 +24,25 @@ class SymbolCompactor {
         std::uint16_t* unique_symbol_ids_;
         size_t* symbol_start_offsets_;
         size_t* symbol_counts_;
-        size_t num_distinct_symbols_;
+        size_t num_unique_symbols_;
 };
 
-// template <typename T>
-// void gather_field(const T* source_ptr, const T* dest_ptr, const thrust::device_vector<T>& map_vector, size_t count) {
-//     thrust::device_vector<const T> src_ptr(source_ptr);
-//     thrust::device_vector<const T> dst_ptr(dest_ptr);
-//     thrust::gather(map.begin(), map.end(), src_ptr, dst_ptr);
-// }
+template <typename T>
+void gather_field(const T* source_ptr, T* dest_ptr, const thrust::device_vector<size_t>& map_vector) {
+    thrust::device_ptr<const T> src_ptr(source_ptr);
+    thrust::device_ptr<T> dst_ptr(dest_ptr);
+    thrust::gather(map_vector.begin(), map_vector.end(), src_ptr, dst_ptr);
+}
+
+template <typename T>
+thrust::device_vector<T> copy_field_to_device(const T* host_ptr, size_t num_elements) {
+    thrust::device_vector<T> device_vector(host_ptr, host_ptr + num_elements);
+    return device_vector;
+}
+
+template <typename T>
+void sort_field(const T* host_ptr, T* dest_ptr, size_t num_elements, const thrust::device_vector<size_t>& map_vector) {
+    thrust::device_vector<T> device_vector = copy_field_to_device(host_ptr, num_elements);
+    T* device_ptr = thrust::raw_pointer_cast(device_vector.data());
+    gather_field(device_ptr, dest_ptr, map_vector);
+}
