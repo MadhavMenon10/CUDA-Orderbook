@@ -10,22 +10,21 @@ GPUHashTable::GPUHashTable(size_t max_active_orders) {
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&sides_), sizeof(char) * capacity_), "GPU Hash table memory allocation for sides_");
 }
 
-
 GPUHashTable::~GPUHashTable() {
     if (order_ids_ != nullptr) {
-        cudaFree(order_ids_);
+        CUDAUtils::check_cuda_error(cudaFree(order_ids_), "Free order_ids_ in hash table");
     }
     if (quantities_ != nullptr) {
-        cudaFree(quantities_);
+        CUDAUtils::check_cuda_error(cudaFree(quantities_), "Free quantities_ in hash table");
     }
     if (prices_ != nullptr) {
-        cudaFree(prices_);
+        CUDAUtils::check_cuda_error(cudaFree(prices_), "Free prices_ in hash table");
     }
     if (symbol_ids_ != nullptr) {
-        cudaFree(symbol_ids_);
+        CUDAUtils::check_cuda_error(cudaFree(symbol_ids_), "Free symbol_ids_ in hash table");
     }
     if (sides_ != nullptr) {
-        cudaFree(sides_);
+        CUDAUtils::check_cuda_error(cudaFree(sides_), "Free sides_ in hash table");
     }
     capacity_ = 0;
 }
