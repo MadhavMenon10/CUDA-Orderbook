@@ -13,18 +13,23 @@ GPUHashTable::GPUHashTable(size_t max_active_orders) {
 GPUHashTable::~GPUHashTable() {
     if (order_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(order_ids_), "Free order_ids_ in hash table");
+        order_ids_ = nullptr;
     }
     if (quantities_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(quantities_), "Free quantities_ in hash table");
+        quantities_ = nullptr;
     }
     if (prices_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(prices_), "Free prices_ in hash table");
+        prices_ = nullptr;
     }
     if (symbol_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(symbol_ids_), "Free symbol_ids_ in hash table");
+        symbol_ids_ = nullptr;
     }
     if (sides_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(sides_), "Free sides_ in hash table");
+        sides_ = nullptr;
     }
     capacity_ = 0;
 }

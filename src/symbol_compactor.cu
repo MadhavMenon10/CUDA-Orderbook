@@ -54,36 +54,47 @@ SymbolCompactor::SymbolCompactor(const SoaArrays& soa_array) {
 SymbolCompactor::~SymbolCompactor() {
     if (order_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(order_ids_), "Free order_ids_ in compactor");
+        order_ids_ = nullptr;
     }
     if (old_order_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(old_order_ids_), "Free old_order_ids_ in compactor");
+        old_order_ids_ = nullptr;
     }
     if (timestamps_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(timestamps_), "Free timestamps_ in compactor");
+        timestamps_ = nullptr;
     }
     if (prices_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(prices_), "Free prices_ in compactor");
+        prices_ = nullptr;
     }
     if (quantities_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(quantities_), "Free quantities_ in compactor");
+        quantities_ = nillptr;
     }
     if (symbol_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(symbol_ids_), "Free symbol_ids_ in compactor");
+        symbol_ids_ = nullptr;
     }
     if (order_types_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(order_types_), "Free order_types_ in compactor");
+        order_types_ = nullptr;
     }
     if (sides_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(sides_), "Free sides_ in compactor");
+        sides_ = nullptr;
     }
     if (unique_symbol_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(unique_symbol_ids_), "Free unique_symbol_ids_ in compactor");
+        unique_symbol_ids_ = nullptr;
     }
     if (symbol_start_offsets_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(symbol_start_offsets_), "Free symbol_start_offsets_ in compactor");
+        symbol_start_offsets_ = nullptr;
     }
     if (symbol_counts_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(symbol_counts_), "Free symbol_counts_ in compactor");
+        symbol_counts_ = nullptr;
     }
     num_unique_symbols_ = 0;
 }
