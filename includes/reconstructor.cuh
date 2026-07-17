@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include "types.hpp"
 
 struct PriceLevel {
     std::uint32_t price;
@@ -27,3 +28,33 @@ class OrderBookSnapshot {
         size_t* tick_counts_;
         size_t num_unique_symbols_;
 };
+
+
+// Following structs are created so that our reconstruction kernel doesn't take like 20 parameters
+struct CompactedMessage {
+    std::uint64_t* order_ids;
+    std::uint64_t* timestamps;
+    std::uint32_t* prices;
+    std::uint32_t* quantities;
+    std::uint16_t* symbol_ids;
+    MessageType* order_types;
+    char* sides;
+    size_t* symbol_start_offsets;
+    size_t* symbol_counts;
+};
+
+struct HashTableData {
+    std::uint64_t* order_ids; 
+    std::uint32_t* quantities;
+    std::uint32_t* prices;
+    std::uint16_t* symbol_ids;
+    char* sides;
+    size_t capacity;  
+};
+
+struct OrderBookSnapshotData {
+    OrderBookTick* ticks; 
+    size_t* tick_start_offsets;
+    size_t* tick_counts;
+};
+

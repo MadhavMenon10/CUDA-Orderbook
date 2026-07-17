@@ -22,3 +22,4 @@ OrderBookSnapshot::~OrderBookSnapshot() {
     }
     num_unique_symbols_ = 0;
 }
+
