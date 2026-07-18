@@ -88,6 +88,7 @@ __device__ bool hash_table_lookup(std::uint64_t order_id, const std::uint64_t* o
     return found;
 }
 
+
 __device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_ids, size_t hash_table_capacity) {
     std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
     size_t slots_checked = 0;
@@ -111,4 +112,26 @@ __device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_i
         }
     }
     return deleted;
+}
+
+
+__device__ bool hash_table_subtract(std::uint64_t order_id, std::uint32_t quantity_to_subtract, std::uint64_t* order_ids, std::uint32_t* quantities, size_t hash_table_capacity) {
+    std::uint64_t hash_index = hash(order_id) % hash_table_capacity;
+    size_t slots_checked = 0;
+    bool subtracted = false;
+    while (!subtracted) {
+        if (slots_checked >= hash_table_capacity) {
+            break;
+        }
+        if (order_ids[hash_index] == order_id) {
+            atomicSub(&quantities[hash_index], quantity_to_subtract);
+            subtracted = true;
+        } else if (order_ids[hash_index] == EMPTY_SLOT_SENTINEL) {
+            break;
+        } else {
+            hash_index = (hash_index + 1) % hash_table_capacity;
+            ++slots_checked;
+        }
+    }
+    return subtracted;
 }

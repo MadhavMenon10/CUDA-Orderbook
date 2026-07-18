@@ -51,6 +51,8 @@ __device__ bool hash_table_lookup(std::uint64_t order_id, const std::uint64_t* o
 
 __device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_ids, size_t hash_table_capacity);
 
+__device__ bool hash_table_subtract(std::uint64_t order_id, std::uint32_t quantity_to_subtract, std::uint64_t* order_ids, std::uint32_t* quantities, size_t hash_table_capacity);
+
 inline __device__ void insert_into_hash_index(std::uint32_t order_quantity, std::uint32_t order_price, std::uint16_t order_symbol_id, char order_side, std::uint32_t* quantities, std::uint32_t* prices, std::uint16_t* symbol_ids, char* sides, std::uint64_t hash_index) {
     quantities[hash_index] = order_quantity;
     prices[hash_index] = order_price;
