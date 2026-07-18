@@ -2,6 +2,9 @@
 #include <cstdint>
 #include <cstddef>
 #include "types.hpp"
+#include "hash_table.cuh"
+
+constexpr std::uint32_t PRICE_EMPTY_SLOT_SENTINEL = UINT32_MAX;
 
 struct PriceLevel {
     std::uint32_t price;
@@ -58,3 +61,6 @@ struct OrderBookSnapshotData {
     size_t* tick_counts;
 };
 
+__device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx);
+
+__global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output);
