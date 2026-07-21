@@ -69,6 +69,83 @@ __device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableDat
     return hash_subtracted && update_local_level;
 }
 
+__device__ bool reconstruct_execute(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+    // Same as reconstruct_cancel since from the book's perspective, an existing order goes down by same amount
+    // Since these are two different market events, they are kept separated
+    std::uint64_t order_id = message_params.order_ids[idx];
+    std::uint32_t execute_quantity = message_params.quantities[idx];
+    HashTableEntry lookup_value;
+    bool hash_lookup = hash_table_lookup(order_id, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity, lookup_value);
+    if (!hash_lookup) {
+        return false;
+    }
+    std::uint32_t price = lookup_value.price;
+    bool hash_subtracted = hash_table_subtract(order_id, execute_quantity, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.capacity);
+    bool update_local_level = false;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        PriceLevel& price_level = local_levels[i];
+        if (price_level.price == price) {
+            price_level.quantity -= execute_quantity;
+            update_local_level = true;
+            break;
+        }
+    }
+    return hash_subtracted && update_local_level;
+}
+
+
+__device__ bool reconstruct_execute_with_price(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+    std::uint64_t order_id = message_params.order_ids[idx];
+    std::uint32_t execute_quantity = message_params.quantities[idx];
+    HashTableEntry lookup_value;
+    bool hash_lookup = hash_table_lookup(order_id, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity, lookup_value);
+    if (!hash_lookup) {
+        return false;
+    }
+    std::uint32_t price = lookup_value.price; 
+    /*
+     * A Cancel/Execute message never carries the order's price — it only gives an order ID
+     * and an amount. We look the order up in the hash table to find where its liquidity
+     * actually rests (e.g. an order quoted at $50.00 stays a $50.00-level update even if
+     * a later execution prints at $50.15 due to price improvement) — the book's price
+     * levels must shrink at the price where the liquidity was resting, not at whatever
+     * price a specific event happens to report.
+    */
+
+    bool hash_subtracted = hash_table_subtract(order_id, execute_quantity, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.capacity);
+    bool update_local_level = false;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        PriceLevel& price_level = local_levels[i];
+        if (price_level.price == price) {
+            price_level.quantity -= execute_quantity;
+            update_local_level = true;
+            break;
+        }
+    }
+    return hash_subtracted && update_local_level;
+}
+
+
+__device__ bool reconstruct_delete(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+    std::uint64_t order_id = message_params.order_ids[idx];
+    HashTableEntry lookup_value;
+    bool hash_lookup = hash_table_lookup(order_id, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity, lookup_value);
+    if (!hash_lookup) {
+        return false;
+    }
+    std::uint32_t price = lookup_value.price;
+    bool hash_deleted = hash_table_delete(order_id, hash_table_data.order_ids, hash_table_data.capacity);
+    bool lookup_deleted = false;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        PriceLevel& price_level = local_levels[i];
+        if (price_level.price == price) {
+            price_level.quantity -= lookup_value.quantity;
+            lookup_deleted = true;
+            break;
+        }
+    }
+    return hash_deleted && lookup_deleted;
+}
 
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output) {
