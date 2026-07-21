@@ -47,6 +47,29 @@ __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData h
     return hash_insert && insert_local_level;
 }
 
+__device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+    std::uint64_t order_id = message_params.order_ids[idx];
+    std::uint32_t cancel_quantity = message_params.quantities[idx];
+    HashTableEntry lookup_value;
+    bool hash_lookup = hash_table_lookup(order_id, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity, lookup_value);
+    if (!hash_lookup) {
+        return false;
+    }
+    std::uint32_t price = lookup_value.price;
+    bool hash_subtracted = hash_table_subtract(order_id, cancel_quantity, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.capacity);
+    bool update_local_level = false;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        PriceLevel& price_level = local_levels[i];
+        if (price_level.price == price) {
+            price_level.quantity -= cancel_quantity;
+            update_local_level = true;
+            break;
+        }
+    }
+    return hash_subtracted && update_local_level;
+}
+
+
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output) {
     size_t symbol_idx = blockIdx.x; // One warp per symbol so one block gets assigned exactly one symbol

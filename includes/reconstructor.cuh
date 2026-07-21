@@ -63,4 +63,6 @@ struct OrderBookSnapshotData {
 
 __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx);
 
+__device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx);
+
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output);
