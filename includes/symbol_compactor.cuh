@@ -12,12 +12,13 @@ class SymbolCompactor {
         SymbolCompactor& operator=(const SymbolCompactor&) = delete;
         SymbolCompactor(SymbolCompactor&&) = delete;
         SymbolCompactor& operator=(SymbolCompactor&&) = delete;
-        inline std::uint64_t* get_order_ids() const {return order_ids_};
+        inline std::uint64_t* get_order_ids() const {return order_ids_;};
         inline std::uint64_t* get_old_order_ids() const {return old_order_ids_;};
         inline std::uint64_t* get_timestamps() const {return timestamps_;};
         inline std::uint32_t* get_prices() const {return prices_;};
-        inline std::uint16_t* get_symbol_ids() const {return symbol_ids_};
-        inline MessageType* get_order_types() const {return order_types_};
+        inline std::uint32_t* get_quantities() const {return quantities_;};
+        inline std::uint16_t* get_symbol_ids() const {return symbol_ids_;};
+        inline MessageType* get_order_types() const {return order_types_;};
         inline char* get_sides() const {return sides_;};
         inline std::uint16_t* get_unique_symbol_ids() const {return unique_symbol_ids_;};
         inline size_t* get_symbol_start_offsets() const {return symbol_start_offsets_;};

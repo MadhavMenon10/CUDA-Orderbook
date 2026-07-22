@@ -148,6 +148,13 @@ __device__ bool reconstruct_delete(CompactedMessage message_params, HashTableDat
 }
 
 
+__device__ bool reconstruct_replace(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
+    std::uint64_t order_id = message_params.order_ids[idx];
+    std::uint64_t old_order_id = message_params.old_order_ids[idx];
+    
+}
+
+
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output) {
     size_t symbol_idx = blockIdx.x; // One warp per symbol so one block gets assigned exactly one symbol
     size_t symbol_offset = messages.symbol_start_offsets[symbol_idx];
