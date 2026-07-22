@@ -153,7 +153,40 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
     std::uint64_t old_order_id = message_params.old_order_ids[idx];
     std::uint32_t new_price = message_params.prices[idx];
     std::uint32_t new_quantity = message_params.quantities[idx];
-
+    HashTableEntry old_lookup_value; 
+    bool old_lookup = hash_table_lookup(old_order_id, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity, old_lookup_value);
+    if (!old_lookup) {
+        return false;
+    }
+    bool old_entry_deleted = hash_table_delete(old_order_id, hash_table_data.order_ids, hash_table_data.capacity);
+    if (!old_entry_deleted) {
+        return false;
+    }
+    bool new_entry_inserted = hash_table_insert(new_order_id, new_quantity, new_price, old_lookup_value.symbol_id, old_lookup_value.side, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity); // A replace order never crosses symbols (one order book per instrument) or side so we used the old values
+    std::uint64_t old_idx = hash(old_lookup_value.price) % 32;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        PriceLevel& price_level = shared_levels[old_idx][i];
+        if (price_level.price == old_lookup_value.price) {
+            price_level.quantity -= old_lookup_value.quantity;
+            break;
+        }
+    }
+    bool insert_local_level = false;
+    std::uint64_t new_idx = hash(new_price) % 32;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        PriceLevel& price_level = shared_levels[new_idx][i];
+        if (price_level.price == PRICE_EMPTY_SLOT_SENTINEL) {
+            price_level.price = new_price;
+            price_level.quantity = new_quantity;
+            insert_local_level = true;
+            break;
+        } else if (price_level.price == new_price) {
+            price_level.quantity += new_quantity;
+            insert_local_level = true;
+            break;
+        }
+    }
+    return new_entry_inserted && insert_local_level;
 }
 
 
