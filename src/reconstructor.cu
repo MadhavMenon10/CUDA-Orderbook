@@ -23,7 +23,7 @@ OrderBookSnapshot::~OrderBookSnapshot() {
     num_unique_symbols_ = 0;
 }
 
-__device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+__device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
     std::uint64_t order_id = message_params.order_ids[idx];
     std::uint32_t price = message_params.prices[idx];
     std::uint32_t quantity = message_params.quantities[idx];
@@ -31,8 +31,9 @@ __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData h
     char side = message_params.sides[idx];
     bool insert_local_level = false;
     bool hash_insert = hash_table_insert(order_id, quantity, price, symbol_id, side, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity);
+    std::uint64_t lane = hash(price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = local_levels[i];
+        PriceLevel& price_level = shared_levels[lane][i];
         if (price_level.price == PRICE_EMPTY_SLOT_SENTINEL) {
             price_level.price = price;
             price_level.quantity = quantity;
@@ -47,7 +48,7 @@ __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData h
     return hash_insert && insert_local_level;
 }
 
-__device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+__device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
     std::uint64_t order_id = message_params.order_ids[idx];
     std::uint32_t cancel_quantity = message_params.quantities[idx];
     HashTableEntry lookup_value;
@@ -58,8 +59,9 @@ __device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableDat
     std::uint32_t price = lookup_value.price;
     bool hash_subtracted = hash_table_subtract(order_id, cancel_quantity, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.capacity);
     bool update_local_level = false;
+    std::uint64_t lane = hash(price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = local_levels[i];
+        PriceLevel& price_level = shared_levels[lane][i];
         if (price_level.price == price) {
             price_level.quantity -= cancel_quantity;
             update_local_level = true;
@@ -69,7 +71,7 @@ __device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableDat
     return hash_subtracted && update_local_level;
 }
 
-__device__ bool reconstruct_execute(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+__device__ bool reconstruct_execute(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
     // Same as reconstruct_cancel since from the book's perspective, an existing order goes down by same amount
     // Since these are two different market events, they are kept separated
     std::uint64_t order_id = message_params.order_ids[idx];
@@ -82,8 +84,9 @@ __device__ bool reconstruct_execute(CompactedMessage message_params, HashTableDa
     std::uint32_t price = lookup_value.price;
     bool hash_subtracted = hash_table_subtract(order_id, execute_quantity, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.capacity);
     bool update_local_level = false;
+    std::uint64_t lane = hash(price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = local_levels[i];
+        PriceLevel& price_level = shared_levels[lane][i];
         if (price_level.price == price) {
             price_level.quantity -= execute_quantity;
             update_local_level = true;
@@ -94,7 +97,7 @@ __device__ bool reconstruct_execute(CompactedMessage message_params, HashTableDa
 }
 
 
-__device__ bool reconstruct_execute_with_price(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+__device__ bool reconstruct_execute_with_price(CompactedMessage message_params, HashTableData hash_table_data,  PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
     std::uint64_t order_id = message_params.order_ids[idx];
     std::uint32_t execute_quantity = message_params.quantities[idx];
     HashTableEntry lookup_value;
@@ -114,8 +117,9 @@ __device__ bool reconstruct_execute_with_price(CompactedMessage message_params, 
 
     bool hash_subtracted = hash_table_subtract(order_id, execute_quantity, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.capacity);
     bool update_local_level = false;
+    std::uint64_t lane = hash(price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = local_levels[i];
+        PriceLevel& price_level = shared_levels[lane][i];
         if (price_level.price == price) {
             price_level.quantity -= execute_quantity;
             update_local_level = true;
@@ -126,7 +130,7 @@ __device__ bool reconstruct_execute_with_price(CompactedMessage message_params, 
 }
 
 
-__device__ bool reconstruct_delete(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel* local_levels, int idx) {
+__device__ bool reconstruct_delete(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
     std::uint64_t order_id = message_params.order_ids[idx];
     HashTableEntry lookup_value;
     bool hash_lookup = hash_table_lookup(order_id, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity, lookup_value);
@@ -136,8 +140,9 @@ __device__ bool reconstruct_delete(CompactedMessage message_params, HashTableDat
     std::uint32_t price = lookup_value.price;
     bool hash_deleted = hash_table_delete(order_id, hash_table_data.order_ids, hash_table_data.capacity);
     bool lookup_deleted = false;
+    std::uint64_t lane = hash(price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = local_levels[i];
+        PriceLevel& price_level = shared_levels[lane][i];
         if (price_level.price == price) {
             price_level.quantity -= lookup_value.quantity;
             lookup_deleted = true;
@@ -163,18 +168,18 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
         return false;
     }
     bool new_entry_inserted = hash_table_insert(new_order_id, new_quantity, new_price, old_lookup_value.symbol_id, old_lookup_value.side, hash_table_data.order_ids, hash_table_data.quantities, hash_table_data.prices, hash_table_data.symbol_ids, hash_table_data.sides, hash_table_data.capacity); // A replace order never crosses symbols (one order book per instrument) or side so we used the old values
-    std::uint64_t old_idx = hash(old_lookup_value.price) % 32;
+    std::uint64_t old_lane = hash(old_lookup_value.price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = shared_levels[old_idx][i];
+        PriceLevel& price_level = shared_levels[old_lane][i];
         if (price_level.price == old_lookup_value.price) {
             price_level.quantity -= old_lookup_value.quantity;
             break;
         }
     }
     bool insert_local_level = false;
-    std::uint64_t new_idx = hash(new_price) % 32;
+    std::uint64_t new_lane = hash(new_price) % WARP_SIZE;
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
-        PriceLevel& price_level = shared_levels[new_idx][i];
+        PriceLevel& price_level = shared_levels[new_lane][i];
         if (price_level.price == PRICE_EMPTY_SLOT_SENTINEL) {
             price_level.price = new_price;
             price_level.quantity = new_quantity;
@@ -191,12 +196,45 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
 
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output) {
+    __shared__ PriceLevel shared_levels[WARP_SIZE][MAX_LEVELS_PER_LANE];
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        shared_levels[threadIdx.x][i].price = PRICE_EMPTY_SLOT_SENTINEL;
+        shared_levels[threadIdx.x][i].quantity = 0;
+    }
+    __syncthreads(); // So all threads finishing writing the sentinel value before shared_levels is read from
     size_t symbol_idx = blockIdx.x; // One warp per symbol so one block gets assigned exactly one symbol
     size_t symbol_offset = messages.symbol_start_offsets[symbol_idx];
     size_t symbol_count = messages.symbol_counts[symbol_idx];
     for (size_t i = symbol_offset; i < symbol_offset + symbol_count; ++i) {
-        MessageType message = messages[i];
-
+        MessageType message = messages.order_types[i];
+        bool message_carried = false;
+        if (threadIdx.x == 0) {
+            switch (message) {
+                case MessageType::Add:
+                    message_carried = reconstruct_add(messages, hash_table_data, shared_levels, i);
+                    break;
+                case MessageType::Cancel:
+                    message_carried = reconstruct_cancel(messages, hash_table_data, shared_levels, i);
+                    break;
+                case MessageType::Execute:
+                    message_carried = reconstruct_execute(messages, hash_table_data, shared_levels, i);
+                    break;
+                case MessageType::ExecuteWithPrice:
+                    message_carried = reconstruct_execute_with_price(messages, hash_table_data, shared_levels, i);
+                    break;
+                case MessageType::Delete:
+                    message_carried = reconstruct_delete(messages, hash_table_data, shared_levels, i);
+                    break;
+                case MessageType::Replace:
+                    message_carried = reconstruct_replace(messages, hash_table_data, shared_levels, i);
+                    break;
+                default:
+                    break;
+            }
+            if (!message_carried) {
+                printf("Reconstruction failed at message %llu (type %d) in symbol block %d\n", static_cast<unsigned long long>(i), static_cast<int>(message), blockIdx.x);
+            }
+        }
     }
 }
 
