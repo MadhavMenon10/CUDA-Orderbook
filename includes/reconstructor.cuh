@@ -75,16 +75,16 @@ struct OrderBookSnapshotData {
     size_t* tick_counts;
 };
 
-__device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx);
+__device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
-__device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx);
+__device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
-__device__ bool reconstruct_execute(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx);
+__device__ bool reconstruct_execute(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
-__device__ bool reconstruct_execute_with_price(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx);
+__device__ bool reconstruct_execute_with_price(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
-__device__ bool reconstruct_delete(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx);
+__device__ bool reconstruct_delete(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
-__device__ bool reconstruct_replace(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx);
+__device__ bool reconstruct_replace(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output);
