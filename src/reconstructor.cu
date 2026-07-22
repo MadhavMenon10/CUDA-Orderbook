@@ -204,6 +204,8 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output) {
     __shared__ PriceLevel bid_levels[WARP_SIZE][MAX_LEVELS_PER_LANE];
     __shared__ PriceLevel ask_levels[WARP_SIZE][MAX_LEVELS_PER_LANE];
+    __shared__ PriceLevel bid_top5[5];
+    __shared__ PriceLevel ask_top5[5];
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         bid_levels[threadIdx.x][i].price = PRICE_EMPTY_SLOT_SENTINEL;
         bid_levels[threadIdx.x][i].quantity = 0;
@@ -244,6 +246,21 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
                 printf("Reconstruction failed at message %llu (type %d) in symbol block %d\n", static_cast<unsigned long long>(i), static_cast<int>(message), blockIdx.x);
             }
         }
+        /*
+         * bid_top5 / ask_top5 hold the current message's top-5 price levels, discovered
+         * fresh via a warp-wide reduction over bid_levels/ask_levels. That reduction has
+         * to start from a clean slate every message since the last message's top-5 values are
+         * stale the moment this message's dispatch (the switch above) has potentially
+         * changed the book, and leftover values from a prior message must never leak
+         * into this message's tick.
+         */
+        if (threadIdx.x < 5) {
+            bid_top5[threadIdx.x].price = PRICE_EMPTY_SLOT_SENTINEL;
+            bid_top5[threadIdx.x].quantity = 0;
+            ask_top5[threadIdx.x].price = PRICE_EMPTY_SLOT_SENTINEL;
+            ask_top5[threadIdx.x].quantity = 0;
+        }
+        __syncthreads(); 
     }
 }
 
