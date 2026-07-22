@@ -149,9 +149,11 @@ __device__ bool reconstruct_delete(CompactedMessage message_params, HashTableDat
 
 
 __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel shared_levels[][MAX_LEVELS_PER_LANE], int idx) {
-    std::uint64_t order_id = message_params.order_ids[idx];
+    std::uint64_t new_order_id = message_params.order_ids[idx];
     std::uint64_t old_order_id = message_params.old_order_ids[idx];
-    
+    std::uint32_t new_price = message_params.prices[idx];
+    std::uint32_t new_quantity = message_params.quantities[idx];
+
 }
 
 
