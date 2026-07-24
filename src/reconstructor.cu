@@ -200,6 +200,36 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
     return new_entry_inserted && insert_local_level;
 }
 
+__device__ PriceLevel find_best_level(PriceLevel levels[][MAX_LEVELS_PER_LANE], bool find_max, const PriceLevel* top_5) {
+    std::uint32_t best_price = PRICE_EMPTY_SLOT_SENTINEL;
+    std::uint32_t best_quantity = 0;
+    for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
+        std::uint32_t price = levels[threadIdx.x][i].price;
+        std::uint32_t quantity = levels[threadIdx.x][i].quantity;
+        bool already_excluded = false;
+        for (int j = 0; j < 5; ++j) {
+            if (top_5[j].price == price) {
+                already_excluded = true;
+                break;
+            }
+        }
+        if ((price != PRICE_EMPTY_SLOT_SENTINEL) && ((best_price == PRICE_EMPTY_SLOT_SENTINEL) || (find_max && price > best_price) || (!find_max && price < best_price)) && !already_excluded) {
+            best_price = price;
+            best_quantity = quantity;
+        }
+    }
+    // To find the best price and quantity across the entire warp
+    for (int offset = 16; offset != 0; offset /= 2) {
+        std::uint32_t other_price = __shfl_down_sync(0xFFFFFFFF, best_price, offset);
+        std::uint32_t other_quantity = __shfl_down_sync(0xFFFFFFFF, best_quantity, offset);
+        if ((find_max && other_price > best_price) || (!find_max && other_price < best_price)) {
+            best_price = other_price;
+            best_quantity = other_quantity;
+        }
+    }
+    return PriceLevel{best_price, best_quantity};
+}
+
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output) {
     __shared__ PriceLevel bid_levels[WARP_SIZE][MAX_LEVELS_PER_LANE];
@@ -245,7 +275,7 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
             if (!message_carried) {
                 printf("Reconstruction failed at message %llu (type %d) in symbol block %d\n", static_cast<unsigned long long>(i), static_cast<int>(message), blockIdx.x);
             }
-        }
+        } 
         /*
          * bid_top5 / ask_top5 hold the current message's top-5 price levels, discovered
          * fresh via a warp-wide reduction over bid_levels/ask_levels. That reduction has
@@ -261,6 +291,31 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
             ask_top5[threadIdx.x].quantity = 0;
         }
         __syncthreads(); 
+        bool find_max = true;
+        for (int round = 0; round < 5; ++round) {
+            PriceLevel best_bid = find_best_level(bid_levels, find_max, bid_top5);
+            if (threadIdx.x == 0) { // All threads will have the best price level so we only use the first thread to avoid redundancy
+                bid_top5[round] = best_bid;
+            }
+            __syncthreads();
+        }
+        find_max = false;
+        for (int round = 0; round < 5; ++round) {
+            PriceLevel best_ask = find_best_level(ask_levels, find_max, ask_top5);
+            if (threadIdx.x == 0) { 
+                ask_top5[round] = best_ask;
+            }
+            __syncthreads();
+        }
+        if (threadIdx.x == 0) { // We don't need every thread to create an output_tick
+            OrderBookTick output_tick;
+            output_tick.timestamp = messages.timestamps[i];
+            for (int j = 0; j < 5; ++j) {
+                output_tick.bids[j] = bid_top5[j];
+                output_tick.asks[j] = ask_top5[j];
+            }
+            output.ticks[i] = output_tick;
+        }   
     }
 }
 

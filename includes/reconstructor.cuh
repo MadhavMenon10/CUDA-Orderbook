@@ -38,6 +38,10 @@ class OrderBookSnapshot {
         OrderBookSnapshot& operator=(const OrderBookSnapshot&) = delete;
         OrderBookSnapshot(OrderBookSnapshot&&) = delete;
         OrderBookSnapshot& operator=(OrderBookSnapshot&&) = delete;
+        inline OrderBookTick* get_ticks() const {return ticks_;};
+        inline const size_t* get_tick_start_offsets() const {return tick_start_offsets_;};
+        inline const size_t* get_tick_counts() const {return tick_counts_;};
+        inline size_t get_num_unique_symbols() const {return num_unique_symbols_;};
     private:
         OrderBookTick* ticks_; 
         size_t* tick_start_offsets_;
@@ -86,5 +90,7 @@ __device__ bool reconstruct_execute_with_price(CompactedMessage message_params, 
 __device__ bool reconstruct_delete(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
 __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
+
+__device__ PriceLevel find_best_level(PriceLevel levels[][MAX_LEVELS_PER_LANE], bool find_max, const PriceLevel* top_5);
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output);
