@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 #include "types.hpp"
 #include "hash_table.cuh"
 
@@ -32,20 +33,20 @@ struct OrderBookTick {
 
 class OrderBookSnapshot {
     public:
-        OrderBookSnapshot(size_t total_message_count, size_t num_unique_symbols);
+        OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count);
         ~OrderBookSnapshot();
         OrderBookSnapshot(const OrderBookSnapshot&) = delete;
         OrderBookSnapshot& operator=(const OrderBookSnapshot&) = delete;
         OrderBookSnapshot(OrderBookSnapshot&&) = delete;
         OrderBookSnapshot& operator=(OrderBookSnapshot&&) = delete;
         inline OrderBookTick* get_ticks() const {return ticks_;};
-        inline const size_t* get_tick_start_offsets() const {return tick_start_offsets_;};
-        inline const size_t* get_tick_counts() const {return tick_counts_;};
+        inline const size_t* get_tick_start_offsets() const {return tick_start_offsets_.data();};
+        inline const size_t* get_tick_counts() const {return tick_counts_.data();};
         inline size_t get_num_unique_symbols() const {return num_unique_symbols_;};
     private:
         OrderBookTick* ticks_; 
-        size_t* tick_start_offsets_;
-        size_t* tick_counts_;
+        std::vector<size_t> tick_start_offsets_; // size known at runtime by num_unique_symbols_ so we prefer a std::vector because of RAII
+        std::vector<size_t> tick_counts_;
         size_t num_unique_symbols_;
 };
 
@@ -75,8 +76,8 @@ struct HashTableData {
 
 struct OrderBookSnapshotData {
     OrderBookTick* ticks; 
-    size_t* tick_start_offsets;
-    size_t* tick_counts;
+    const size_t* tick_start_offsets;
+    const size_t* tick_counts;
 };
 
 __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
@@ -94,3 +95,5 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
 __device__ PriceLevel find_best_level(PriceLevel levels[][MAX_LEVELS_PER_LANE], bool find_max, const PriceLevel* top_5);
 
 __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_data, OrderBookSnapshotData output);
+
+void launch_reconstruction_kernel(const SymbolCompactor& compacted_symbols, OrderBookSnapshot& order_book_snapshot, GPUHashTable& hash_table);

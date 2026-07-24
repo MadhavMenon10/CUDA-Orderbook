@@ -1,24 +1,15 @@
 #include "reconstructor.cuh"
 
-OrderBookSnapshot::OrderBookSnapshot(size_t total_message_count, size_t num_unique_symbols) {
+OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count): tick_start_offsets_(compacted_symbols.get_num_unique_symbols()), tick_counts_(compacted_symbols.get_num_unique_symbols()), num_unique_symbols_(compacted_symbols.get_num_unique_symbols()) {
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count), "Allocate memory for ticks_");
-    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&tick_start_offsets_), sizeof(size_t) * num_unique_symbols), "Allocate memory for tick_start_offsets_");
-    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&tick_counts_), sizeof(size_t) * num_unique_symbols), "Allocate memory for tick_counts_");
-    num_unique_symbols_ = num_unique_symbols;
+    CUDAUtils::check_cuda_error(cudaMemcpy(tick_start_offsets_.data(), compacted_symbols.get_symbol_start_offsets(), sizeof(size_t) * num_unique_symbols_, cudaMemcpyDeviceToHost), "Memory copy from device to host for tick_start_offsets_");
+    CUDAUtils::check_cuda_error(cudaMemcpy(tick_counts_.data(), compacted_symbols.get_symbol_counts(), sizeof(size_t) * num_unique_symbols_, cudaMemcpyDeviceToHost), "Memory copy from device to host for tick_counts_");
 }
 
 OrderBookSnapshot::~OrderBookSnapshot() {
     if (ticks_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(ticks_), "Free ticks_");
         ticks_ = nullptr;
-    }
-    if (tick_start_offsets_ != nullptr) {
-        CUDAUtils::check_cuda_error(cudaFree(tick_start_offsets_), "Free tick_start_offsets_");
-        tick_start_offsets_ = nullptr;
-    }
-    if (tick_counts_ != nullptr) {
-        CUDAUtils::check_cuda_error(cudaFree(tick_counts_), "Free tick_counts_");
-        tick_counts_ = nullptr;
     }
     num_unique_symbols_ = 0;
 }
@@ -320,3 +311,28 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
 }
 
 
+void launch_reconstruction_kernel(const SymbolCompactor& compacted_symbols, OrderBookSnapshot& order_book_snapshot, GPUHashTable& hash_table) {
+    CompactedMessage compacted_message;
+    compacted_message.order_ids = compacted_symbols.get_order_ids();
+    compacted_message.old_order_ids = compacted_symbols.get_old_order_ids();
+    compacted_message.timestamps = compacted_symbols.get_timestamps();
+    compacted_message.prices = compacted_symbols.get_prices();
+    compacted_message.quantities = compacted_symbols.get_quantities();
+    compacted_message.symbol_ids = compacted_symbols.get_symbol_ids();
+    compacted_message.order_types = compacted_symbols.get_order_types();
+    compacted_message.sides = compacted_symbols.get_sides();
+    compacted_message.symbol_start_offsets = compacted_symbols.get_symbol_start_offsets();
+    compacted_message.symbol_counts = compacted_symbols.get_symbol_counts();
+    HashTableData hash_table_data;
+    hash_table_data.order_ids = hash_table.get_order_ids();
+    hash_table_data.quantities = hash_table.get_quantities();
+    hash_table_data.prices = hash_table.get_prices();
+    hash_table_data.symbol_ids = hash_table.get_symbol_ids();
+    hash_table_data.sides = hash_table.get_sides();
+    hash_table_data.capacity = hash_table.capacity();
+    OrderBookSnapshotData order_book_snapshot_data;
+    order_book_snapshot_data.ticks = order_book_snapshot.get_ticks();
+    order_book_snapshot_data.tick_start_offsets = order_book_snapshot.get_tick_start_offsets();
+    order_book_snapshot_data.tick_counts = order_book_snapshot.get_tick_counts();
+    reconstruct<<<compacted_symbols.get_num_unique_symbols(), WARP_SIZE>>>(compacted_message, hash_table_data, order_book_snapshot_data);
+}
