@@ -1,10 +1,12 @@
 #pragma once 
+#include "reconstructor.cuh"
 #include <cstdint>
+
 
 struct StrategyConfig {
     std::uint16_t threshold; // Signal threshold in basis points (1/100th of a percent)
     size_t lookback_window; // How many past ticks to consider when evaluating the signal
-    std::uint32_t position_sizing; // Fixed number of shares to buy or sell when the signal fires
+    std::uint32_t position_sizing; // Fixed number of shares to buy or sell when the signal fires (stays fixed for simplicity)
 };
 
 
@@ -27,3 +29,4 @@ class BacktestResults {
 };
 
 
+__global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks, const StrategyConfig* configs, std::int32_t* pnl_results);
