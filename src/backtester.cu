@@ -1,19 +1,10 @@
 #include "backtester.cuh"
 #include "cuda_utils.hpp"
 
-BacktestResults::BacktestResults(const StrategyConfig *configs,
-                                 size_t num_configs) {
-  CUDAUtils::check_cuda_error(
-      cudaMalloc(reinterpret_cast<void **>(&pnl_results_),
-                 sizeof(std::int32_t) * num_configs),
-      "Allocate memory for pnl_results");
-  CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void **>(&configs_),
-                                         sizeof(StrategyConfig) * num_configs),
-                              "Allocate memory for configs");
-  CUDAUtils::check_cuda_error(cudaMemcpy(configs_, configs,
-                                         sizeof(StrategyConfig) * num_configs,
-                                         cudaMemcpyHostToDevice),
-                              "Transfer configs into class");
+BacktestResults::BacktestResults(const StrategyConfig *configs, size_t num_configs) {
+  CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&pnl_results_), sizeof(std::int32_t) * num_configs), "Allocate memory for pnl_results");
+  CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&configs_), sizeof(StrategyConfig) * num_configs), "Allocate memory for configs");
+  CUDAUtils::check_cuda_error(cudaMemcpy(configs_, configs, sizeof(StrategyConfig) * num_configs, cudaMemcpyHostToDevice), "Transfer configs into class");
   num_configs_ = num_configs;
 }
 
@@ -48,7 +39,7 @@ std::vector<StrategyConfig> generate_configs(size_t num_thresholds = 500, size_t
               StrategyConfig config;
               config.threshold = static_cast<std::uint16_t>(i + 1);
               config.lookback_window = (j + 1) * 5;
-              config.position_sizing = static_cast<std::uint32_t>(k + 1) * 100;
+              config.position_size = static_cast<std::uint32_t>(k + 1) * 100;
               configs.push_back(config);
           }
       }
@@ -58,9 +49,7 @@ std::vector<StrategyConfig> generate_configs(size_t num_thresholds = 500, size_t
 
 
 
-__global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks,
-                             const StrategyConfig* configs,
-                             std::int32_t* pnl_results) {
+__global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks, const StrategyConfig* configs, std::int32_t* pnl_results) {
   size_t idx = blockIdx.x;
   StrategyConfig config = configs[idx];
   bool holding_shares = false;
@@ -80,7 +69,7 @@ __global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks,
         std::int32_t sell_difference =
             static_cast<std::int32_t>(ticks[i].bids[0].price) -
             static_cast<std::int32_t>(price);
-        pnl += (sell_difference * config.position_sizing);
+        pnl += (sell_difference * config.position_size);
         holding_shares = false;
       }
     }
