@@ -1,6 +1,6 @@
 #include "reconstructor.cuh"
 
-OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count): tick_start_offsets_(compacted_symbols.get_num_unique_symbols()), tick_counts_(compacted_symbols.get_num_unique_symbols()), num_unique_symbols_(compacted_symbols.get_num_unique_symbols()) {
+OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count): tick_start_offsets_(compacted_symbols.get_num_unique_symbols()), tick_counts_(compacted_symbols.get_num_unique_symbols()), num_unique_symbols_(compacted_symbols.get_num_unique_symbols()), total_tick_count_(total_message_count) {
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count), "Allocate memory for ticks_");
     CUDAUtils::check_cuda_error(cudaMemcpy(tick_start_offsets_.data(), compacted_symbols.get_symbol_start_offsets(), sizeof(size_t) * num_unique_symbols_, cudaMemcpyDeviceToHost), "Memory copy from device to host for tick_start_offsets_");
     CUDAUtils::check_cuda_error(cudaMemcpy(tick_counts_.data(), compacted_symbols.get_symbol_counts(), sizeof(size_t) * num_unique_symbols_, cudaMemcpyDeviceToHost), "Memory copy from device to host for tick_counts_");

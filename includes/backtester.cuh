@@ -19,7 +19,7 @@ class BacktestResults {
         BacktestResults& operator=(const BacktestResults&) = delete;
         BacktestResults(BacktestResults&&) = delete;
         BacktestResults& operator=(BacktestResults&&) = delete;
-        inline const std::int32_t* get_pnl_results() const {return pnl_results_;};
+        inline std::int32_t* get_pnl_results() const {return pnl_results_;};
         inline const StrategyConfig* get_configs() const {return configs_;};
         inline size_t get_num_configs() const {return num_configs_};
     private:
@@ -28,5 +28,9 @@ class BacktestResults {
         size_t num_configs_;
 };
 
+
+std::vector<StrategyConfig> generate_configs();
+
+void launch_run_strategy_kernel(const OrderBookSnapshot& order_book_snapshot, BacktestResults& backtest_results);
 
 __global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks, const StrategyConfig* configs, std::int32_t* pnl_results);
