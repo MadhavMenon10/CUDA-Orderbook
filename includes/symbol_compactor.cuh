@@ -3,6 +3,11 @@
 #include "cuda_utils.hpp"
 #include <cstdint>
 #include <cub/cub.cuh>
+#include <thrust/device_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/gather.h>
+#include <thrust/sequence.h>
+#include <thrust/raw_pointer_cast.h>
 
 class SymbolCompactor {
     public:
