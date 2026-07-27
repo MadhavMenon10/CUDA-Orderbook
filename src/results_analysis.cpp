@@ -1,5 +1,7 @@
+#include <iostream>
 #include <algorithm>
 #include "results_analysis.hpp"
+#include "backtester.cuh"
 
 void BackTestResultsAnalysis::find_best_pnl(const std::vector<std::int32_t>& pnl_results) {
     auto highest_pnl = std::max_element(pnl_results.begin(), pnl_results.end());
