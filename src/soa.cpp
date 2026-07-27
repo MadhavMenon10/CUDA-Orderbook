@@ -1,6 +1,6 @@
 #include "soa.hpp"
 
-SoaArrays::SoaArrays() : order_ids_(nullptr), old_order_ids_(nullptr), timestamps_(nullptr), prices_(nullptr), quantities_(nullptr), symbol_ids_(nullptr), order_types_(nullptr), sides(nullptr), size_(0), capacity_(0) {}
+SoaArrays::SoaArrays() : order_ids_(nullptr), old_order_ids_(nullptr), timestamps_(nullptr), prices_(nullptr), quantities_(nullptr), symbol_ids_(nullptr), order_types_(nullptr), sides_(nullptr), size_(0), capacity_(0) {}
 
 SoaArrays::~SoaArrays() {
     if (order_ids_ != nullptr) {
