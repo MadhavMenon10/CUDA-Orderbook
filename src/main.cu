@@ -9,6 +9,7 @@
 #include "symbol_compactor.cuh"
 #include "reconstructor.cuh"
 #include "backtester.cuh"
+#include "results_analysis.hpp"
 
 
 int main(int argc, char* argv[]) {
@@ -44,7 +45,8 @@ int main(int argc, char* argv[]) {
         launch_run_strategy_kernel(order_book_snapshot, backtest_results);
         CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for backtesting to finish"); 
         std::vector<std::int32_t> pnl_results(backtest_results.get_num_configs());
-        CUDAUtils::check_cuda_error(cudaMemcpy(pnl_results.data(), backtest_results.get_pnl_results(), sizeof(std::int32_t) * backtest_results.get_num_configs(),  cudaMemcpyDeviceToHost), "Copy PNL results to host"); 
+        CUDAUtils::check_cuda_error(cudaMemcpy(pnl_results.data(), backtest_results.get_pnl_results(), sizeof(std::int32_t) * backtest_results.get_num_configs(),  cudaMemcpyDeviceToHost), "Copy PNL results to host");
+        BackTestResultsAnalysis::report_best_strategy(pnl_results, configs);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return 1;
