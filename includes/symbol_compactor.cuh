@@ -7,7 +7,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/gather.h>
 #include <thrust/sequence.h>
-#include <thrust/raw_pointer_cast.h>
+
 
 class SymbolCompactor {
     public:
