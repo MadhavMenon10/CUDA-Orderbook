@@ -2,39 +2,38 @@
 
 SoaArrays::SoaArrays() : order_ids_(nullptr), old_order_ids_(nullptr), timestamps_(nullptr), prices_(nullptr), quantities_(nullptr), symbol_ids_(nullptr), order_types_(nullptr), sides(nullptr), size_(0), capacity_(0) {}
 
-SoaArrays::~SoaArrays()
-{
-    if (order_ids != nullptr)
-    {
+SoaArrays::~SoaArrays() {
+    if (order_ids_ != nullptr) {
         cudaFreeHost(order_ids_);
+        order_ids_ = nullptr;
     }
-    if (old_order_ids != nullptr)
-    {
+    if (old_order_ids_ != nullptr) {
         cudaFreeHost(old_order_ids_);
+        old_order_ids_ = nullptr;
     }
-    if (timestamps != nullptr)
-    {
+    if (timestamps_ != nullptr) {
         cudaFreeHost(timestamps_);
+        timestamps_ = nullptr;
     }
-    if (prices != nullptr)
-    {
+    if (prices_ != nullptr) {
         cudaFreeHost(prices_);
+        prices_ = nullptr;
     }
-    if (quantities != nullptr)
-    {
+    if (quantities_ != nullptr) {
         cudaFreeHost(quantities_);
+        quantities_ = nullptr;
     }
-    if (symbol_ids != nullptr)
-    {
+    if (symbol_ids_ != nullptr) {
         cudaFreeHost(symbol_ids_);
+        symbol_ids_ = nullptr;
     }
-    if (order_types != nullptr)
-    {
+    if (order_types_ != nullptr) {
         cudaFreeHost(order_types_);
+        order_types_ = nullptr;
     }
-    if (sides != nullptr)
-    {
+    if (sides_ != nullptr) {
         cudaFreeHost(sides_);
+        sides_ = nulltpr;
     }
     size_ = 0;
     capacity_ = 0;
@@ -57,8 +56,7 @@ void SoaArrays::reserve(const size_t message_count) {
     capacity_ = message_count;
 }
 
-void SoaArrays::append(const DecodedOrder &decoded_order)
-{
+void SoaArrays::append(const DecodedOrder &decoded_order) {
     if (size_ >= capacity_)
     {
         throw std::runtime_error("The size of the SoaArrays exceed its capacity");
