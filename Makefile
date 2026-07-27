@@ -1,5 +1,5 @@
 .PHONY: clean
-CXXFLAGS = -std=c++23 -Iincludes/ -I/usr/local/cuda/includes/ -Wall -Wextra -pedantic 
+CXXFLAGS = -std=c++23 -Iincludes/ -I/usr/local/cuda/include/ -Wall -Wextra -pedantic 
 LDFLAGS = -L/usr/local/cuda/lib64 -lcudart
 
 bin/itch_parser: build/reader.o build/decoder.o build/soa.o build/main.o
