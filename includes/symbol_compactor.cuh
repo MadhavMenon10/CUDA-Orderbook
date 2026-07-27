@@ -2,7 +2,7 @@
 #include "soa.hpp"
 #include "cuda_utils.hpp"
 #include <cstdint>
-#include <cub/cub.h>
+#include <cub/cub.cuh>
 
 class SymbolCompactor {
     public:
