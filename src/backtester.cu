@@ -29,7 +29,7 @@ BacktestResults::~BacktestResults() {
  * domain research or backtesting against known market behavior, neither of which
  * this project is attempting to demonstrate.
  */
-std::vector<StrategyConfig> generate_configs(size_t num_thresholds = 500, size_t num_lookbacks = 10, size_t num_position_sizes = 2) {
+std::vector<StrategyConfig> generate_configs(size_t num_thresholds, size_t num_lookbacks, size_t num_position_sizes) {
   size_t total_configs = num_thresholds * num_lookbacks * num_position_sizes;
   std::vector<StrategyConfig> configs;
   configs.reserve(total_configs);
