@@ -2,6 +2,7 @@
 #include "reconstructor.cuh"
 #include "types.hpp"
 #include <cstdint>
+#include <vector>
 
 
 
@@ -23,7 +24,7 @@ private:
   size_t num_configs_;
 };
 
-std::vector<StrategyConfig> generate_configs();
+std::vector<StrategyConfig> generate_configs(size_t num_thresholds = 500, size_t num_lookbacks = 10, size_t num_position_sizes = 2);
 
 void launch_run_strategy_kernel(const OrderBookSnapshot& order_book_snapshot, BacktestResults& backtest_results);
 
