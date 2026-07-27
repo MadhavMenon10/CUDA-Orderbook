@@ -1,50 +1,44 @@
 #include "decoder.hpp"
+#include <stdexcept>
 
-std::uint16_t ItchDecoder::read_be_u16(const std::uint8_t *buffer, size_t offset)
-{
+std::uint16_t ItchDecoder::read_be_u16(const std::uint8_t* buffer, size_t offset) {
     // Swaps endianness since machine stores information using little endian while ITCH data is stored using big endian
     std::uint16_t byte_value;
     std::memcpy(&byte_value, buffer + offset, sizeof(std::uint16_t)); // Always reads 2 bytes
-    if (std::endian::native == std::endian::little)
-    {
+    if (std::endian::native == std::endian::little) {
         byte_value = std::byteswap(byte_value);
     }
     return byte_value;
 }
 
-std::uint32_t ItchDecoder::read_be_u32(const std::uint8_t *buffer, size_t offset)
-{
+std::uint32_t ItchDecoder::read_be_u32(const std::uint8_t* buffer, size_t offset) {
     // Swaps endianness since machine stores information using little endian while ITCH data is stored using big endian
     std::uint32_t byte_value;
     std::memcpy(&byte_value, buffer + offset, sizeof(std::uint32_t)); // Always reads 4 bytes
-    if (std::endian::native == std::endian::little)
-    {
+    if (std::endian::native == std::endian::little) {
         byte_value = std::byteswap(byte_value);
     }
     return byte_value;
 }
 
-std::uint64_t ItchDecoder::read_be_u64(const std::uint8_t *buffer, size_t offset)
-{
+std::uint64_t ItchDecoder::read_be_u64(const std::uint8_t* buffer, size_t offset) {
     // Swaps endianness since machine stores information using little endian while ITCH data is stored using big endian
     std::uint64_t byte_value;
     std::memcpy(&byte_value, buffer + offset, sizeof(std::uint64_t)); // Always reads 8 bytes
-    if (std::endian::native == std::endian::little)
-    {
+    if (std::endian::native == std::endian::little) {
         byte_value = std::byteswap(byte_value);
     }
     return byte_value;
 }
 
-std::uint64_t ItchDecoder::read_be_u48_as_u64(const std::uint8_t *buffer, size_t offset)
-{
+std::uint64_t ItchDecoder::read_be_u48_as_u64(const std::uint8_t* buffer, size_t offset) {
     // Used to read the timestamps correctly
     std::array<uint8_t, 8> local_buffer{0}; // Timestamp is only 6B but read_be_u64 always reads 8B. So we create a local buffer by zero-padding the top 2B (which has lower-significance in big endian) so the 6B land in the correct order position when read_be_u64 is called
     std::memcpy(local_buffer.data() + 2, buffer + offset, 6);
     return ItchDecoder::read_be_u64(local_buffer.data(), 0);
 }
 
-DecodedOrder ItchDecoder::decode_add_order(const std::uint8_t *buffer)
+DecodedOrder ItchDecoder::decode_add_order(const std::uint8_t* buffer)
 {
     DecodedOrder decoded_add_order;
     decoded_add_order.order_id = ItchDecoder::read_be_u64(buffer, 11);
@@ -58,8 +52,7 @@ DecodedOrder ItchDecoder::decode_add_order(const std::uint8_t *buffer)
     return decoded_add_order;
 }
 
-DecodedOrder ItchDecoder::decode_execute_order(const std::uint8_t *buffer)
-{
+DecodedOrder ItchDecoder::decode_execute_order(const std::uint8_t* buffer) {
     DecodedOrder decoded_execute_order;
     decoded_execute_order.order_id = ItchDecoder::read_be_u64(buffer, 11);
     decoded_execute_order.old_order_id = std::numeric_limits<uint64_t>::max();
@@ -72,8 +65,7 @@ DecodedOrder ItchDecoder::decode_execute_order(const std::uint8_t *buffer)
     return decoded_execute_order;
 }
 
-DecodedOrder ItchDecoder::decode_execute_with_price_order(const std::uint8_t *buffer)
-{
+DecodedOrder ItchDecoder::decode_execute_with_price_order(const std::uint8_t* buffer) {
     DecodedOrder decoded_execute_with_price_order;
     decoded_execute_with_price_order.order_id = ItchDecoder::read_be_u64(buffer, 11);
     decoded_execute_with_price_order.old_order_id = std::numeric_limits<uint64_t>::max();
@@ -86,8 +78,7 @@ DecodedOrder ItchDecoder::decode_execute_with_price_order(const std::uint8_t *bu
     return decoded_execute_with_price_order;
 }
 
-DecodedOrder ItchDecoder::decode_cancel_order(const std::uint8_t *buffer)
-{
+DecodedOrder ItchDecoder::decode_cancel_order(const std::uint8_t* buffer) {
     DecodedOrder decoded_cancel_order;
     decoded_cancel_order.order_id = ItchDecoder::read_be_u64(buffer, 11);
     decoded_cancel_order.old_order_id = std::numeric_limits<uint64_t>::max();
@@ -100,8 +91,7 @@ DecodedOrder ItchDecoder::decode_cancel_order(const std::uint8_t *buffer)
     return decoded_cancel_order;
 }
 
-DecodedOrder ItchDecoder::decode_delete_order(const std::uint8_t *buffer)
-{
+DecodedOrder ItchDecoder::decode_delete_order(const std::uint8_t* buffer) {
     DecodedOrder decoded_delete_order;
     decoded_delete_order.order_id = ItchDecoder::read_be_u64(buffer, 11);
     decoded_delete_order.old_order_id = std::numeric_limits<uint64_t>::max();
@@ -114,8 +104,7 @@ DecodedOrder ItchDecoder::decode_delete_order(const std::uint8_t *buffer)
     return decoded_delete_order;
 }
 
-DecodedOrder ItchDecoder::decode_replace_order(const std::uint8_t *buffer)
-{
+DecodedOrder ItchDecoder::decode_replace_order(const std::uint8_t* buffer) {
     DecodedOrder decoded_replace_order;
     decoded_replace_order.order_id = ItchDecoder::read_be_u64(buffer, 19); //
     decoded_replace_order.old_order_id = ItchDecoder::read_be_u64(buffer, 11);
@@ -128,8 +117,7 @@ DecodedOrder ItchDecoder::decode_replace_order(const std::uint8_t *buffer)
     return decoded_replace_order;
 }
 
-DecodedOrder ItchDecoder::decode_order(const std::uint8_t *buffer)
-{
+DecodedOrder ItchDecoder::decode_order(const std::uint8_t* buffer) {
     DecodedOrder decoded_order;
     char order_message_type = buffer[0];
     if (order_message_type == 'F')
