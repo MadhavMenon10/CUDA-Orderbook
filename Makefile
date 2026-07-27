@@ -1,5 +1,5 @@
 .PHONY: clean
-CXXFLAGS_CPU = -std=c++20 -Iincludes/ -I/usr/local/cuda/include/ -Wall -Wextra -pedantic 
+CXXFLAGS_CPU = -std=c++23 -Iincludes/ -I/usr/local/cuda/include/ -Wall -Wextra -pedantic 
 CXXFLAGS_GPU = -std=c++20 -Iincludes/ -I/usr/local/cuda/include/
 LDFLAGS = -L/usr/local/cuda/lib64 -lcudart
 
