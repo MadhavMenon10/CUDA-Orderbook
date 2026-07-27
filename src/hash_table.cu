@@ -49,10 +49,12 @@ __device__ bool hash_table_insert(std::uint64_t order_id, std::uint32_t order_qu
         if (slots_checked >= hash_table_capacity) {
             break;
         }
-        if (atomicCAS(&order_ids[hash_index], EMPTY_SLOT_SENTINEL, order_id) == EMPTY_SLOT_SENTINEL) {
+        std::uint64_t empty_slot = EMPTY_SLOT_SENTINEL;
+        std::uint64_t tombstone = TOMBSTONE_SENTINEL;
+        if (atomicCAS(&order_ids[hash_index], empty_slot, order_id) == EMPTY_SLOT_SENTINEL) {
             insert_into_hash_index(order_quantity, order_price, order_symbol_id, order_side, quantities, prices, symbol_ids, sides, hash_index);
             written = true;
-        } else if (atomicCAS(&order_ids[hash_index], TOMBSTONE_SENTINEL, order_id) == TOMBSTONE_SENTINEL) {
+        } else if (atomicCAS(&order_ids[hash_index], tombstone, order_id) == TOMBSTONE_SENTINEL) {
             insert_into_hash_index(order_quantity, order_price, order_symbol_id, order_side, quantities, prices, symbol_ids, sides, hash_index);
             written = true;
         } else {
@@ -98,7 +100,8 @@ __device__ bool hash_table_delete(std::uint64_t order_id, std::uint64_t* order_i
             break;
         }
         if (order_ids[hash_index] == order_id) {
-            if (atomicCAS(&order_ids[hash_index], order_id, TOMBSTONE_SENTINEL) == order_id) {
+            std::uint64_t tombstone = TOMBSTONE_SENTINEL;
+            if (atomicCAS(&order_ids[hash_index], order_id, tombstone) == order_id) {
                 deleted = true;
             }
             // We retry at the same slot as atomicCAS failed because another thread changed this slot between our read and our swap
