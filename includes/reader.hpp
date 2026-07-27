@@ -15,6 +15,7 @@ class ItchReader {
         ItchReader(ItchReader &&) = delete;
         ItchReader &operator=(ItchReader &&) = delete;
         bool get_next_message(uint8_t *memory_space, size_t memory_size, size_t &message_size);
+        void reset_state();
 
     private:
         size_t num_bytes_available() const;
