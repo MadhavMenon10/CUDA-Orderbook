@@ -20,7 +20,7 @@ class SoaArrays {
         inline const std::uint16_t* get_symbol_ids() const { return symbol_ids_; };
         inline const MessageType* get_order_types() const {return order_types_;};
         inline const char* get_sides() const { return sides_; };
-        inline size_t size() const {return size_};
+        inline size_t size() const {return size_;};
         inline size_t capacity() const { return capacity_; };
 
     private:
