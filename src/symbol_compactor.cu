@@ -1,4 +1,4 @@
-#include "compactor.cuh"
+#include "symbol_compactor.cuh"
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 
