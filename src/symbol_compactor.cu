@@ -70,7 +70,7 @@ SymbolCompactor::~SymbolCompactor() {
     }
     if (quantities_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(quantities_), "Free quantities_ in compactor");
-        quantities_ = nillptr;
+        quantities_ = nullptr;
     }
     if (symbol_ids_ != nullptr) {
         CUDAUtils::check_cuda_error(cudaFree(symbol_ids_), "Free symbol_ids_ in compactor");
