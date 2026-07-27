@@ -4,6 +4,7 @@
 #include <vector>
 #include "types.hpp"
 #include "hash_table.cuh"
+#include "symbol_compactor.cuh"
 
 constexpr std::uint32_t PRICE_EMPTY_SLOT_SENTINEL = UINT32_MAX;
 
