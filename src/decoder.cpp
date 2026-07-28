@@ -117,8 +117,8 @@ DecodedOrder ItchDecoder::decode_replace_order(const std::uint8_t* buffer) {
     return decoded_replace_order;
 }
 
-DecodedOrder ItchDecoder::decode_order(const std::uint8_t* buffer) {
-    DecodedOrder decoded_order;
+std::optional<DecodedOrder> ItchDecoder::decode_order(const std::uint8_t* buffer) {
+    std::optional<DecodedOrder> decoded_order;
     char order_message_type = buffer[0];
     if (order_message_type == 'F')
     {
@@ -147,7 +147,7 @@ DecodedOrder ItchDecoder::decode_order(const std::uint8_t* buffer) {
         decoded_order = decode_replace_order(buffer);
         break;
     default:
-        throw std::runtime_error("Order Type not supported.");
+        decoded_order = std::nullopt;
     }
     return decoded_order;
 }
