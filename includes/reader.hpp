@@ -9,7 +9,7 @@
 
 class ItchReader {
     public:
-        ItchReader(const std::string &file_path, size_t buffer_size);
+        ItchReader(const std::string &file_path, size_t buffer_size, size_t length_prefix_size);
         ItchReader(const ItchReader &) = delete;
         ItchReader &operator=(const ItchReader &) = delete;
         ItchReader(ItchReader &&) = delete;
@@ -24,4 +24,5 @@ class ItchReader {
         std::ifstream file_;
         size_t buffer_pos_;
         size_t buffer_valid_;
+        size_t length_prefix_size_;
 };

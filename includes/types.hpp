@@ -5,8 +5,7 @@
 #include <cstdint>
 
 // The different order types that can be called in the order book
-enum class MessageType : char
-{
+enum class MessageType : char {
     Add = 'A',
     Execute = 'E',
     ExecuteWithPrice = 'C',
