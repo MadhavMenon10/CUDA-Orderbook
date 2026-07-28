@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
         size_t max_active_orders = 1000000; // Estimate
         GPUHashTable hash_table(max_active_orders);
         SymbolCompactor compacted_symbols(soa_arrays);
-        OrderBookSnapshot order_book_snapshot(compacted_symbols, message_count);
+        OrderBookSnapshot order_book_snapshot(compacted_symbols, soa_arrays.size());
         launch_reconstruction_kernel(compacted_symbols, order_book_snapshot, hash_table);
         CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for reconstruction to finish before backtesting");
         std::vector<StrategyConfig> configs = generate_configs();
