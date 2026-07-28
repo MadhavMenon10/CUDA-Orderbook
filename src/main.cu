@@ -10,6 +10,7 @@
 #include "reconstructor.cuh"
 #include "backtester.cuh"
 #include "results_analysis.hpp"
+#include <chrono>
 
 
 int main(int argc, char* argv[]) {
@@ -42,12 +43,21 @@ int main(int argc, char* argv[]) {
         GPUHashTable hash_table(max_active_orders);
         SymbolCompactor compacted_symbols(soa_arrays);
         OrderBookSnapshot order_book_snapshot(compacted_symbols, message_count);
+        auto reconstruct_start = std::chrono::high_resolution_clock::now();
         launch_reconstruction_kernel(compacted_symbols, order_book_snapshot, hash_table);
         CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for reconstruction to finish before backtesting");
+        auto reconstruct_end = std::chrono::high_resolution_clock::now();
+        double reconstruct_seconds = std::chrono::duration<double>(reconstruct_end - reconstruct_start).count();
+        std::cout << "Reconstruction: " << message_count << " messages in " << reconstruct_seconds << "s (" << (message_count / reconstruct_seconds) << " messages/sec)\n";
+        
         std::vector<StrategyConfig> configs = generate_configs();
         BacktestResults backtest_results(configs.data(), configs.size());
+        auto backtest_start = std::chrono::high_resolution_clock::now();
         launch_run_strategy_kernel(order_book_snapshot, backtest_results);
-        CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for backtesting to finish"); 
+        CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for backtesting to finish");
+        auto backtest_end = std::chrono::high_resolution_clock::now();
+        double backtest_seconds = std::chrono::duration<double>(backtest_end - backtest_start).count();
+        std::cout << "Backtest: " << configs.size() << " configs in " << backtest_seconds << "s\n";
         std::vector<std::int32_t> pnl_results(backtest_results.get_num_configs());
         CUDAUtils::check_cuda_error(cudaMemcpy(pnl_results.data(), backtest_results.get_pnl_results(), sizeof(std::int32_t) * backtest_results.get_num_configs(),  cudaMemcpyDeviceToHost), "Copy PNL results to host");
         BackTestResultsAnalysis::report_best_strategy(pnl_results, configs);
