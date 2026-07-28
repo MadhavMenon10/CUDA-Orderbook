@@ -20,7 +20,8 @@ int main(int argc, char* argv[]) {
     try {
         std::string file_path(argv[1]);
         size_t one_mb = 1048576;
-        ItchReader itch_reader(file_path, one_mb);
+        size_t length_prefix = 2; // Test NASDAQ sample file wraps every message in a 2-byte big-endian length prefix
+        ItchReader itch_reader(file_path, one_mb, length_prefix);
         std::array<uint8_t, 64> scratch_memory;
         size_t message_size = 0;
         size_t message_count = 0;
