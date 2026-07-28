@@ -32,19 +32,16 @@ int main(int argc, char* argv[]) {
         SoaArrays soa_arrays;
         soa_arrays.reserve(message_count);
         itch_reader.reset_state();
-        size_t messages_to_keep = 5000000; // temporary cap for generating a smaller test file
-        size_t i = 0;
-        while (i < messages_to_keep && itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) {
+        while (itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) {
             std::optional<DecodedOrder> decoded_order = ItchDecoder::decode_order(scratch_memory.data());
             if (decoded_order) {
                 soa_arrays.append(*decoded_order); // We need to dereference the optional
             }
-            ++i;
         }
         size_t max_active_orders = 1000000; // Estimate
         GPUHashTable hash_table(max_active_orders);
         SymbolCompactor compacted_symbols(soa_arrays);
-        OrderBookSnapshot order_book_snapshot(compacted_symbols, soa_arrays.size());
+        OrderBookSnapshot order_book_snapshot(compacted_symbols, message_count);
         launch_reconstruction_kernel(compacted_symbols, order_book_snapshot, hash_table);
         CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for reconstruction to finish before backtesting");
         std::vector<StrategyConfig> configs = generate_configs();
