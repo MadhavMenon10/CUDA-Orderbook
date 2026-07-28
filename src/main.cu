@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
         while (itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) {
             ++message_count;
         }
+        std::cout << "Total messages: " << message_count << "\n";
         SoaArrays soa_arrays;
         soa_arrays.reserve(message_count);
         itch_reader.reset_state();
