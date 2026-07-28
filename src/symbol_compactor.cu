@@ -38,6 +38,7 @@ SymbolCompactor::SymbolCompactor(const SoaArrays& soa_array) {
     sort_field(soa_array.get_sides(), sides_, total_message_count, sort_array_out);
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&unique_symbol_ids_), sizeof(std::uint16_t) * total_message_count), "Allocate memory for unique_symbol_ids_");
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&symbol_counts_), sizeof(size_t) * total_message_count), "Allocate memory for symbol_counts");
+        CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&symbol_start_offsets_), sizeof(size_t) * total_message_count), "Allocate memory for symbol_start_offsets_");
     thrust::device_vector<size_t> num_symbols_device(1); 
     temp = nullptr;
     temp_storage_bytes = 0;
