@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
         while (itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) {
             std::optional<DecodedOrder> decoded_order = ItchDecoder::decode_order(scratch_memory.data());
             if (decoded_order) {
-                soa_arrays.append(decoded_order);
+                soa_arrays.append(*decoded_order); // We need to dereference the optional
             }
         }
         size_t max_active_orders = 1000000; // Estimate
