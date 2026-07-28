@@ -44,12 +44,17 @@ bool ItchReader::get_next_message(uint8_t* memory_space, size_t memory_size, siz
             throw std::runtime_error("Prefix length not supported. Please try another ITCH file");
     }
     buffer_pos_ += length_prefix_size_;
-    size_t message_length = itch_message_lengths[static_cast<unsigned char>(buffer_[buffer_pos_])];
-    if (prefix_length != message_length) {
-        throw std::runtime_error("Prefix length " + std::to_string(prefix_length) + " does not match expected message length " + std::to_string(message_length) + " for type " + std::string(1, buffer_[buffer_pos_]) + " at position " + std::to_string(buffer_pos_));
+    if (num_bytes_available() == 0) { 
+        refill();
+    } if (num_bytes_available() == 0) { 
+        return false; 
     }
+    size_t message_length = itch_message_lengths[static_cast<unsigned char>(buffer_[buffer_pos_])];
     if (message_length == SIZE_MAX) {
         throw std::runtime_error("Message type " + std::string(1, buffer_[buffer_pos_]) + " not supported. Error occured at " + std::to_string(buffer_pos_));
+    }
+    if (prefix_length != message_length) {
+        throw std::runtime_error("Prefix length " + std::to_string(prefix_length) + " does not match expected message length " + std::to_string(message_length) + " for type " + std::string(1, buffer_[buffer_pos_]) + " at position " + std::to_string(buffer_pos_));
     }
     if (num_bytes_available() == 0) {
         refill();
