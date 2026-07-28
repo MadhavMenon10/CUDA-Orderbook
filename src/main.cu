@@ -49,7 +49,6 @@ int main(int argc, char* argv[]) {
         auto reconstruct_end = std::chrono::high_resolution_clock::now();
         double reconstruct_seconds = std::chrono::duration<double>(reconstruct_end - reconstruct_start).count();
         std::cout << "Reconstruction: " << message_count << " messages in " << reconstruct_seconds << "s (" << (message_count / reconstruct_seconds) << " messages/sec)\n";
-        
         std::vector<StrategyConfig> configs = generate_configs();
         BacktestResults backtest_results(configs.data(), configs.size());
         auto backtest_start = std::chrono::high_resolution_clock::now();

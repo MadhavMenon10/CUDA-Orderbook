@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
-#include <vector>
 #include "types.hpp"
 #include "hash_table.cuh"
 #include "symbol_compactor.cuh"
@@ -30,6 +29,7 @@ struct OrderBookTick {
     PriceLevel bids[5];
     PriceLevel asks[5]; // Avoids std::array since these are consumed inside a CUDA kernel
     std::uint64_t timestamp;
+    std::uint16_t symbol_id;
 };
 
 class OrderBookSnapshot {
@@ -41,16 +41,16 @@ class OrderBookSnapshot {
         OrderBookSnapshot(OrderBookSnapshot&&) = delete;
         OrderBookSnapshot& operator=(OrderBookSnapshot&&) = delete;
         inline OrderBookTick* get_ticks() const {return ticks_;};
-        inline const size_t* get_tick_start_offsets() const {return tick_start_offsets_.data();};
-        inline const size_t* get_tick_counts() const {return tick_counts_.data();};
         inline size_t get_num_unique_symbols() const {return num_unique_symbols_;};
         inline size_t get_total_tick_count() const {return total_tick_count_;};
+        inline size_t* get_tick_write_count() const {return tick_write_count_;};
+        inline size_t get_ticks_capacity() const {return ticks_capacity_;};
     private:
         OrderBookTick* ticks_; 
-        std::vector<size_t> tick_start_offsets_; // size known at runtime by num_unique_symbols_ so we prefer a std::vector because of RAII
-        std::vector<size_t> tick_counts_;
         size_t num_unique_symbols_;
         size_t total_tick_count_;
+        size_t* tick_write_count_;
+        size_t ticks_capacity_;
 };
 
 
@@ -79,8 +79,8 @@ struct HashTableData {
 
 struct OrderBookSnapshotData {
     OrderBookTick* ticks; 
-    const size_t* tick_start_offsets;
-    const size_t* tick_counts;
+    size_t* tick_write_count;
+    size_t ticks_capacity;
 };
 
 __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);

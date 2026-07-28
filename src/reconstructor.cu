@@ -1,9 +1,10 @@
 #include "reconstructor.cuh"
 
-OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count): tick_start_offsets_(compacted_symbols.get_num_unique_symbols()), tick_counts_(compacted_symbols.get_num_unique_symbols()), num_unique_symbols_(compacted_symbols.get_num_unique_symbols()), total_tick_count_(total_message_count) {
-    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count), "Allocate memory for ticks_");
-    CUDAUtils::check_cuda_error(cudaMemcpy(tick_start_offsets_.data(), compacted_symbols.get_symbol_start_offsets(), sizeof(size_t) * num_unique_symbols_, cudaMemcpyDeviceToHost), "Memory copy from device to host for tick_start_offsets_");
-    CUDAUtils::check_cuda_error(cudaMemcpy(tick_counts_.data(), compacted_symbols.get_symbol_counts(), sizeof(size_t) * num_unique_symbols_, cudaMemcpyDeviceToHost), "Memory copy from device to host for tick_counts_");
+OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count):  num_unique_symbols_(compacted_symbols.get_num_unique_symbols()), total_tick_count_(total_message_count), tick_write_count_(0) {
+    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count/4), "Allocate memory for ticks_"); // Divide by 4 as an estimate of the size 
+    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&tick_write_count_), sizeof(size_t)), "Allocate tick_write_count_");
+    CUDAUtils::check_cuda_error(cudaMemset(tick_write_count_, 0, sizeof(size_t)), "Initialise tick_write_count_ with 0");
+    ticks_capacity_ = total_message_count / 4;
 }
 
 OrderBookSnapshot::~OrderBookSnapshot() {
@@ -11,7 +12,12 @@ OrderBookSnapshot::~OrderBookSnapshot() {
         CUDAUtils::check_cuda_error(cudaFree(ticks_), "Free ticks_");
         ticks_ = nullptr;
     }
+    if (tick_write_count_ != nullptr) {
+        CUDAUtils::check_cuda_error(cudaFree(tick_write_count_), "Free tick_write_count_");
+        tick_write_count_ = nullptr;
+    }
     num_unique_symbols_ = 0;
+    ticks_capacity_ = 0;
 }
 
 __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx) {
@@ -227,6 +233,8 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
     __shared__ PriceLevel ask_levels[WARP_SIZE][MAX_LEVELS_PER_LANE];
     __shared__ PriceLevel bid_top5[5];
     __shared__ PriceLevel ask_top5[5];
+    __shared__ PriceLevel last_bid_top5[5];
+    __shared__ PriceLevel last_ask_top5[5];
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         bid_levels[threadIdx.x][i].price = PRICE_EMPTY_SLOT_SENTINEL;
         bid_levels[threadIdx.x][i].quantity = 0;
@@ -299,13 +307,34 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
             __syncthreads();
         }
         if (threadIdx.x == 0) { // We don't need every thread to create an output_tick
-            OrderBookTick output_tick;
-            output_tick.timestamp = messages.timestamps[i];
+            bool changed = false;
             for (int j = 0; j < 5; ++j) {
-                output_tick.bids[j] = bid_top5[j];
-                output_tick.asks[j] = ask_top5[j];
+                if (bid_top5[j].price != last_bid_top5[j].price || bid_top5[j].quantity != last_bid_top5[j].quantity) {
+                    changed = true;
+                    break;
+                }
+                if (ask_top5[j].price != last_ask_top5[j].price || ask_top5[j].quantity != last_ask_top5[j].quantity) {
+                    changed = true;
+                    break;
+                }
             }
-            output.ticks[i] = output_tick;
+            if (changed) {
+                size_t slot = atomicAdd(output.tick_write_count, static_cast<size_t>(1));
+                if (slot < output.get_ticks_capacity()) {
+                    OrderBookTick output_tick;
+                    output_tick.timestamp = messages.timestamps[i];
+                    output_tick.symbol_id = messages.symbol_ids[i];
+                    for (int j = 0; j < 5; ++j) {
+                        output_tick.bids[j] = bid_top5[j];
+                        output_tick.asks[j] = ask_top5[j];
+                        last_bid_top5[j] = bid_top5[j];
+                        last_ask_top5[j] = ask_top5[j];
+                    }
+                    output.ticks[slot] = output_tick;
+                } else {
+                    printf("Tick capacity exceeded for symbol block %d, dropping tick at message %llu\n", blockIdx.x, static_cast<unsigned long long>(i)); 
+                }
+            }
         }   
     }
 }
@@ -332,7 +361,7 @@ void launch_reconstruction_kernel(const SymbolCompactor& compacted_symbols, Orde
     hash_table_data.capacity = hash_table.capacity();
     OrderBookSnapshotData order_book_snapshot_data;
     order_book_snapshot_data.ticks = order_book_snapshot.get_ticks();
-    order_book_snapshot_data.tick_start_offsets = order_book_snapshot.get_tick_start_offsets();
-    order_book_snapshot_data.tick_counts = order_book_snapshot.get_tick_counts();
+    order_book_snapshot_data.tick_write_count = order_book_snapshot.get_tick_write_count();
+    order_book_snapshot_data.ticks_capacity = order_book_snapshot.get_ticks_capacity();
     reconstruct<<<compacted_symbols.get_num_unique_symbols(), WARP_SIZE>>>(compacted_message, hash_table_data, order_book_snapshot_data);
 }
