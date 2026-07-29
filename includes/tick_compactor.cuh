@@ -24,4 +24,4 @@ class TickCompactor {
         size_t num_unique_symbols_;
 };
 
-__global__ void extract_symbol_ids(const OrderBookTick* ticks, std::uint16_t* symbol_ids_out, size_t count)
+__global__ void extract_symbol_ids(const OrderBookTick* ticks, std::uint16_t* symbol_ids_out, size_t count);

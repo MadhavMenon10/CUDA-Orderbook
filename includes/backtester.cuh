@@ -32,6 +32,6 @@ private:
 
 std::vector<StrategyConfig> generate_configs(size_t num_thresholds = 500, size_t num_lookbacks = 10, size_t num_position_sizes = 2);
 
-void launch_run_strategy_kernel(const OrderBookSnapshot& order_book_snapshot, BacktestResults& backtest_results);
+void launch_run_strategy_kernel(const TickCompactor& tick_compactor, BacktestResults& backtest_results);
 
 __global__ void run_strategy(TickStreamData ticks, const StrategyConfig* configs, std::int32_t* pnl_results);
