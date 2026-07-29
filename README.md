@@ -36,12 +36,7 @@ Unfortunately, the GPU cloud instance does not support NVIDIA Nsight Compute `nc
 
 ## Build
 
-Clone the repo with
-
-```bash
-git clone
-```
-Compile with
+Clone the repo and compile with
 ```bash
 make bin/itch_parser
 ```
