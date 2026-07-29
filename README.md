@@ -45,6 +45,9 @@ If you have a NASDAQ Itch file on disc, execute the binary with
 ```bash
 ./bin/itch_parser path_to_file
 ```
+
+The CUDA paths in the Makefile are specific to the GPU cloud instance. You may have to change it to match your system.
+
 ## Languages and Tooling
 C++ was used for code on the host (CPU) while CUDA C++ was used for everything on the device (GPU).  CUB was used for radix sort and run-length-encoding used for compaction. Thrust was used to facilitate this.
 
