@@ -53,6 +53,7 @@ C++ was used for code on the host (CPU) while CUDA C++ was used for everything o
 ## Pipeline
 
 ### Parsing the ITCH Feed
+A custom `ItchReader` class and `ItchDecoder` namespace was created to parse ITCH files. 
 
 ### GPU Hash Table
 
