@@ -49,41 +49,42 @@ std::vector<StrategyConfig> generate_configs(size_t num_thresholds, size_t num_l
 
 
 
-__global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks, const StrategyConfig* configs, std::int32_t* pnl_results) {
-  size_t idx = blockIdx.x;
-  StrategyConfig config = configs[idx];
-  bool holding_shares = false;
-  std::int32_t pnl = 0;
-  std::uint32_t price = 0;
-  if (threadIdx.x == 0) {
-    for (size_t i = 0; i < num_ticks; ++i) {
-      std::uint32_t spread = ticks[i].asks[0].price - ticks[i].bids[0].price;
-      std::uint32_t mid_price =
-          (ticks[i].asks[0].price + ticks[i].bids[0].price) / 2;
-      std::uint32_t spread_bps =
-          (spread * 10000) / mid_price; // spread in basis points
-      if (spread_bps < config.threshold && !holding_shares) {
-        price = ticks[i].asks[0].price;
-        holding_shares = true;
-      } else if (spread_bps >= config.threshold && holding_shares) {
-        std::int32_t sell_difference =
-            static_cast<std::int32_t>(ticks[i].bids[0].price) -
-            static_cast<std::int32_t>(price);
-        pnl += (sell_difference * config.position_size);
-        holding_shares = false;
-      }
+__global__ void run_strategy(TickStreamData ticks, const StrategyConfig* configs, std::int32_t* pnl_results) {
+    size_t idx = blockIdx.x;
+    StrategyConfig config = configs[idx];
+    std::int32_t pnl = 0;
+    if (threadIdx.x == 0) {
+        for (size_t i = 0; i < ticks.num_unique_symbols ++i) {
+            bool holding_shares = false;
+            std::uint32_t price = 0;  
+            for (size_t j = ticks.tick_start_offsets[i]; j < ticks.tick_start_offsets[i] + ticks.tick_counts[i]; ++j) {
+                std::uint32_t spread = ticks.sorted_ticks[j].asks[0].price - ticks.sorted_ticks[j].bids[0].price;
+                std::uint32_t mid_price = (ticks.sorted_ticks[j].asks[0].price + ticks.sorted_ticks[j].bids[0].price) / 2;
+                std::uint32_t spread_bps = (spread * 10000) / mid_price; // spread in basis points
+                if (spread_bps < config.threshold && !holding_shares) {
+                    price = ticks.sorted_ticks[j].asks[0].price;
+                    holding_shares = true;
+                } else if (spread_bps >= config.threshold && holding_shares) {
+                    std::int32_t sell_difference = static_cast<std::int32_t>(ticks.sorted_ticks[j].bids[0].price) - static_cast<std::int32_t>(price);
+                    pnl += (sell_difference * config.position_size);
+                    holding_shares = false;
+                }
+            }
+        }
+      pnl_results[idx] = pnl;
     }
-    pnl_results[idx] = pnl;
-  }
 }
+ 
 
 
-
-void launch_run_strategy_kernel(const OrderBookSnapshot& order_book_snapshot, BacktestResults& backtest_results) {
-    OrderBookTick* ticks = order_book_snapshot.get_ticks();
-    size_t total_tick_count = order_book_snapshot.get_total_tick_count();
+void launch_run_strategy_kernel(const TickCompactor& tick_compactor, BacktestResults& backtest_results) {
+    TickStreamData tick_stream_data;
+    tick_stream_data.sorted_ticks = tick_compactor.get_sorted_ticks();
+    tick_stream_data.tick_start_offsets = tick_compactor.get_tick_start_offsets();
+    tick_stream_data.tick_counts = tick_compactor.get_tick_counts();
+    tick_stream_data.num_unique_symbols = tick_compactor.get_num_unique_symbols();
     const StrategyConfig* configs = backtest_results.get_configs();
     std::int32_t* pnl_results = backtest_results.get_pnl_results();
     size_t num_configs = backtest_results.get_num_configs();
-    run_strategy<<<num_configs, 1>>>(ticks, total_tick_count, configs, pnl_results);
+    run_strategy<<<num_configs, 1>>>(tick_stream_data, configs, pnl_results);
 }

@@ -1,10 +1,16 @@
 #pragma once
 #include "reconstructor.cuh"
+#include "tick_compactor.cuh"
 #include "types.hpp"
 #include <cstdint>
 #include <vector>
 
-
+struct TickStreamData {
+    const OrderBookTick* sorted_ticks;
+    const size_t* tick_start_offsets;
+    const size_t* tick_counts;
+    size_t num_unique_symbols;
+};
 
 class BacktestResults {
 public:
@@ -28,4 +34,4 @@ std::vector<StrategyConfig> generate_configs(size_t num_thresholds = 500, size_t
 
 void launch_run_strategy_kernel(const OrderBookSnapshot& order_book_snapshot, BacktestResults& backtest_results);
 
-__global__ void run_strategy(const OrderBookTick* ticks, size_t num_ticks, const StrategyConfig* configs, std::int32_t* pnl_results);
+__global__ void run_strategy(TickStreamData ticks, const StrategyConfig* configs, std::int32_t* pnl_results);

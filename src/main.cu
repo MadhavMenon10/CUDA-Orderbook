@@ -9,6 +9,7 @@
 #include "symbol_compactor.cuh"
 #include "reconstructor.cuh"
 #include "backtester.cuh"
+#include "tick_compactor.cuh"
 #include "results_analysis.hpp"
 #include <chrono>
 
@@ -51,8 +52,9 @@ int main(int argc, char* argv[]) {
         std::cout << "Reconstruction: " << message_count << " messages in " << reconstruct_seconds << "s (" << (message_count / reconstruct_seconds) << " messages/sec)\n";
         std::vector<StrategyConfig> configs = generate_configs();
         BacktestResults backtest_results(configs.data(), configs.size());
+        TickCompactor tick_compactor(order_book_snapshot);
         auto backtest_start = std::chrono::high_resolution_clock::now();
-        launch_run_strategy_kernel(order_book_snapshot, backtest_results);
+        launch_run_strategy_kernel(tick_compactor, backtest_results);
         CUDAUtils::check_cuda_error(cudaDeviceSynchronize(), "Wait for backtesting to finish");
         auto backtest_end = std::chrono::high_resolution_clock::now();
         double backtest_seconds = std::chrono::duration<double>(backtest_end - backtest_start).count();
