@@ -34,11 +34,13 @@ int main(int argc, char* argv[]) {
         soa_arrays.reserve(message_count);
         itch_reader.reset_state();
         size_t messages_to_keep = 5000000; // temporary cap, diagnosing whether the redesign fails even at small scale
-        while (itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) { 
+        size_t i = 0;
+        while (i < messages_to_keep && itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) { 
             std::optional<DecodedOrder> decoded_order = ItchDecoder::decode_order(scratch_memory.data());
             if (decoded_order) {
                 soa_arrays.append(*decoded_order); // We need to dereference the optional
             }
+            ++i;
         }
         std::cout << "Total messages: " << soa_arrays.size() << "\n";
         size_t max_active_orders = 1000000; // Estimate

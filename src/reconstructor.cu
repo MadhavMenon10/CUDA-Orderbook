@@ -20,6 +20,8 @@ OrderBookSnapshot::~OrderBookSnapshot() {
     ticks_capacity_ = 0;
 }
 
+__device__ size_t failure_print_count = 0;
+
 __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx) {
     std::uint64_t order_id = message_params.order_ids[idx];
     std::uint32_t price = message_params.prices[idx];
@@ -272,7 +274,10 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
                     break;
             }
             if (!message_carried) {
-                printf("Reconstruction failed at message %llu (type %d) in symbol block %d\n", static_cast<unsigned long long>(i), static_cast<int>(message), blockIdx.x);
+                size_t print_index = atomicAdd(&failure_print_count, static_cast<size_t>(1));
+                if (print_index < 100) {  // only the first 100 failures across the whole run
+                    printf("Reconstruction failed at message %llu (type %d) in symbol block %d\n", static_cast<unsigned long long>(i), static_cast<int>(message), blockIdx.x);
+                }
             }
         } 
         /*
@@ -319,7 +324,7 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
                 }
             }
             if (changed) {
-                size_t slot = atomicAdd(reinterpret_cast<unsigned long long*>(output.tick_write_count), static_cast<size_t>(1)); // Same as atomicCAS
+                size_t slot = atomicAdd(reinterpret_cast<unsigned long long*>(output.tick_write_count), static_cast<unsigned long long>(1)); // Same as atomicCAS
                 if (slot < output.ticks_capacity) {
                     OrderBookTick output_tick;
                     output_tick.timestamp = messages.timestamps[i];
