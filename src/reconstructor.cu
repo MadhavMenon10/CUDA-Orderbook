@@ -319,8 +319,8 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
                 }
             }
             if (changed) {
-                size_t slot = atomicAdd(output.tick_write_count, static_cast<size_t>(1));
-                if (slot < output.get_ticks_capacity()) {
+                size_t slot = atomicAdd(reinterpret_cast<unsigned long long*>(output.tick_write_count), static_cast<size_t>(1)); // Same as atomicCAS
+                if (slot < output.ticks_capacity) {
                     OrderBookTick output_tick;
                     output_tick.timestamp = messages.timestamps[i];
                     output_tick.symbol_id = messages.symbol_ids[i];
