@@ -17,7 +17,7 @@ constexpr std::uint32_t PRICE_EMPTY_SLOT_SENTINEL = UINT32_MAX;
  * distributions -- worth revisiting once this can be profiled on real data.
 */
 
-constexpr int MAX_LEVELS_PER_LANE = 96; // Number of distinct price levels a single one of the warp's 32 lanes is allowed to hold in its own small local array at once
+constexpr int MAX_LEVELS_PER_LANE = 94; // Number of distinct price levels a single one of the warp's 32 lanes is allowed to hold in its own small local array at once
 constexpr int WARP_SIZE = 32;
 
 struct PriceLevel {
