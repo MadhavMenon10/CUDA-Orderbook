@@ -16,7 +16,6 @@ OrderBookSnapshot::~OrderBookSnapshot() {
         tick_write_count_ = nullptr;
     }
     num_unique_symbols_ = 0;
-    ticks_capacity_ = 0;
 }
 
 __device__ size_t failure_print_count = 0;
