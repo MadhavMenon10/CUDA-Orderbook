@@ -127,8 +127,12 @@ __device__ bool hash_table_subtract(std::uint64_t order_id, std::uint32_t quanti
             break;
         }
         if (order_ids[hash_index] == order_id) {
-            atomicSub(&quantities[hash_index], quantity_to_subtract);
-            subtracted = true;
+            std::uint32_t current = quantities[hash_index];
+            std::uint32_t clamped_result = (current >= quantity_to_subtract) ? (current - amount_to_subtract) : 0;
+            if (atomicCAS(&quantities[hash_index], current, clamped_result) == current) {
+                subtracted = true;
+            }
+            continue;
         } else if (order_ids[hash_index] == EMPTY_SLOT_SENTINEL) {
             break;
         } else {

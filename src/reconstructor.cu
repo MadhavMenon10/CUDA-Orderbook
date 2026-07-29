@@ -64,7 +64,14 @@ __device__ bool reconstruct_cancel(CompactedMessage message_params, HashTableDat
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         PriceLevel& price_level = levels[lane][i];
         if (price_level.price == price) {
-            price_level.quantity -= cancel_quantity;
+            if (price_level.quantity >= cancel_quantity) {
+                price_level.quantity -= cancel_quantity;
+            } else {
+                price_level.quantity = 0;
+            }
+            if (price_level.quantity == 0) {
+                price_level.price = PRICE_EMPTY_SLOT_SENTINEL;
+            }
             update_local_level = true;
             break;
         }
@@ -90,7 +97,14 @@ __device__ bool reconstruct_execute(CompactedMessage message_params, HashTableDa
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         PriceLevel& price_level = levels[lane][i];
         if (price_level.price == price) {
-            price_level.quantity -= execute_quantity;
+            if (price_level.quantity >= execute_quantity) {
+                price_level.quantity -= execute_quantity;
+            } else {
+                price_level.quantity = 0;
+            }
+            if (price_level.quantity == 0) {
+                price_level.price = PRICE_EMPTY_SLOT_SENTINEL;
+            }
             update_local_level = true;
             break;
         }
@@ -124,7 +138,14 @@ __device__ bool reconstruct_execute_with_price(CompactedMessage message_params, 
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         PriceLevel& price_level = levels[lane][i];
         if (price_level.price == price) {
-            price_level.quantity -= execute_quantity;
+            if (price_level.quantity >= execute_quantity) {
+                price_level.quantity -= execute_quantity;
+            } else {
+                price_level.quantity = 0;
+            }
+            if (price_level.quantity == 0) {
+                price_level.price = PRICE_EMPTY_SLOT_SENTINEL;
+            }
             update_local_level = true;
             break;
         }
@@ -148,7 +169,14 @@ __device__ bool reconstruct_delete(CompactedMessage message_params, HashTableDat
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         PriceLevel& price_level = levels[lane][i];
         if (price_level.price == price) {
-            price_level.quantity -= lookup_value.quantity;
+            if (price_level.quantity >= lookup_value.quantity) {
+                price_level.quantity -= lookup_value.quantity;
+            } else {
+                price_level.quantity = 0;
+            }
+            if (price_level.quantity == 0) {
+                price_level.price = PRICE_EMPTY_SLOT_SENTINEL;
+            }
             lookup_deleted = true;
             break;
         }
@@ -177,7 +205,14 @@ __device__ bool reconstruct_replace(CompactedMessage message_params, HashTableDa
     for (int i = 0; i < MAX_LEVELS_PER_LANE; ++i) {
         PriceLevel& price_level = levels[old_lane][i];
         if (price_level.price == old_lookup_value.price) {
-            price_level.quantity -= old_lookup_value.quantity;
+            if (price_level.quantity >= old_lookup_value.quantity) {
+                price_level.quantity -= old_lookup_value.quantity;
+            } else {
+                price_level.quantity = 0;
+            }
+            if (price_level.quantity == 0) {
+                price_level.price = PRICE_EMPTY_SLOT_SENTINEL;
+            }
             break;
         }
     }
@@ -221,7 +256,7 @@ __device__ PriceLevel find_best_level(PriceLevel levels[][MAX_LEVELS_PER_LANE], 
     for (int offset = 16; offset != 0; offset /= 2) {
         std::uint32_t other_price = __shfl_down_sync(0xFFFFFFFF, best_price, offset);
         std::uint32_t other_quantity = __shfl_down_sync(0xFFFFFFFF, best_quantity, offset);
-        if ((find_max && other_price > best_price) || (!find_max && other_price < best_price)) {
+        if ((other_price != PRICE_EMPTY_SLOT_SENTINEL) && ((best_price == PRICE_EMPTY_SLOT_SENTINEL) || (find_max && other_price > best_price) || (!find_max && other_price < best_price))) {
             best_price = other_price;
             best_quantity = other_quantity;
         }
