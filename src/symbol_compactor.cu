@@ -1,6 +1,4 @@
 #include "symbol_compactor.cuh"
-#include <thrust/device_vector.h>
-#include <thrust/sequence.h>
 
 // Compacts the symbols so that one reconstruction warp can be assigned to each symbol
 

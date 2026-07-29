@@ -53,7 +53,6 @@ class OrderBookSnapshot {
         size_t ticks_capacity_;
 };
 
-
 // Following structs are created so that our reconstruction kernel doesn't take like 20 parameters
 struct CompactedMessage {
     std::uint64_t* order_ids;
@@ -82,6 +81,7 @@ struct OrderBookSnapshotData {
     size_t* tick_write_count;
     size_t ticks_capacity;
 };
+
 
 __device__ bool reconstruct_add(CompactedMessage message_params, HashTableData hash_table_data, PriceLevel bid_levels[][MAX_LEVELS_PER_LANE], PriceLevel ask_levels[][MAX_LEVELS_PER_LANE], int idx);
 
