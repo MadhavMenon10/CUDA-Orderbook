@@ -128,7 +128,12 @@ __device__ bool hash_table_subtract(std::uint64_t order_id, std::uint32_t quanti
         }
         if (order_ids[hash_index] == order_id) {
             std::uint32_t current = quantities[hash_index];
-            std::uint32_t clamped_result = (current >= quantity_to_subtract) ? (current - amount_to_subtract) : 0;
+            std::uint32_t clamped_result = 0;
+            if (current >= quantity_to_subtract) {
+                clamped_result = current - quantity_to_subtract;
+            } else {
+                clamped_result = 0;
+            }
             if (atomicCAS(&quantities[hash_index], current, clamped_result) == current) {
                 subtracted = true;
             }
