@@ -32,9 +32,24 @@ The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  
 
 ![CUDA GPU MemOps Summary (by Size)](docs/pics/memops_summary_size.png)
 
+Unfortunately, the GPU cloud instance does not support NVIDIA Nsight Compute `ncu`. This is common on most rented GPU containers due to driver security restrictions; an `ncu` analysis was thus ommitted.
 
 ## Build
 
+Clone the repo with
+
+```bash
+git clone
+```
+Compile with
+```bash
+make bin/itch_parser
+```
+If you have a NASDAQ Itch file on disc, execute the binary with
+
+```bash
+./bin/itch_parser path_to_file
+```
 ## Languages and Tooling
 
 ## Directory Layout
