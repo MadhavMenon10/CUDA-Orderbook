@@ -5,6 +5,8 @@ This README was written by a human.
 
 A GPU pipeline that parses raw NASDAQ TotalView ITCH 5.0 market data, reconstructs a live limit order book for every traded symbol, and sweeps 10,000 trading strategy configurations against the reconstructed book in parallel (using the GPU).
 
+## Results
+
 ### Benchmarks
 
 The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  5.0 file available at the [NASDAQ Public Archive](https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/). The entire project was run on an NVIDIA H100 SXM cloud instance on [Runpod.io](https://www.runpod.io/)
@@ -18,8 +20,18 @@ The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  
 
 ![OS Runtime Summary](docs/pics/osrt_summary.png)
 
+- CUDA GPU Kernel Summary
 
-## Results
+![CUDA GPU Kernel Summary](docs/pics/kernel_summary.png)
+
+- CUDA GPU MemOps Summary (by Time)
+
+![CUDA GPU MemOps Summary (by Time)](docs/pics/memops_summary.png)
+
+- CUDA GPU MemOps Summary (by Size)
+
+![CUDA GPU MemOps Summary (by Size)](docs/pics/memops_summary_size.png)
+
 
 ## Build
 
