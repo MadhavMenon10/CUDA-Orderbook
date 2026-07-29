@@ -1,7 +1,7 @@
 #include "reconstructor.cuh"
 
 OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, size_t total_message_count):  num_unique_symbols_(compacted_symbols.get_num_unique_symbols()), total_tick_count_(total_message_count), tick_write_count_(0) {
-    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count/4), "Allocate memory for ticks_"); // Divide by 4 as an estimate of the size 
+    CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count), "Allocate memory for ticks_");
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&tick_write_count_), sizeof(size_t)), "Allocate tick_write_count_");
     CUDAUtils::check_cuda_error(cudaMemset(tick_write_count_, 0, sizeof(size_t)), "Initialise tick_write_count_ with 0");
     ticks_capacity_ = total_message_count / 4;
