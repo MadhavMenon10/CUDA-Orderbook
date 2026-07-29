@@ -7,7 +7,7 @@ A GPU pipeline that parses raw NASDAQ TotalView ITCH 5.0 market data, reconstruc
 
 ## Results
 
-### Benchmarks
+### Measurements
 
 The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  5.0 file available at the [NASDAQ Public Archive](https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/). The entire project was run on an NVIDIA H100 SXM cloud instance on [Runpod.io](https://www.runpod.io/)
 
