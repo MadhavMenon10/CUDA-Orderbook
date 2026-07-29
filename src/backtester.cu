@@ -54,7 +54,7 @@ __global__ void run_strategy(TickStreamData ticks, const StrategyConfig* configs
     StrategyConfig config = configs[idx];
     std::int32_t pnl = 0;
     if (threadIdx.x == 0) {
-        for (size_t i = 0; i < ticks.num_unique_symbols ++i) {
+        for (size_t i = 0; i < ticks.num_unique_symbols; ++i) {
             bool holding_shares = false;
             std::uint32_t price = 0;  
             for (size_t j = ticks.tick_start_offsets[i]; j < ticks.tick_start_offsets[i] + ticks.tick_counts[i]; ++j) {
