@@ -274,7 +274,7 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
                     break;
             }
             if (!message_carried) {
-                size_t print_index = atomicAdd(&failure_print_count, static_cast<size_t>(1));
+                size_t print_index = atomicAdd(reinterpret_cast<unsigned long long*>(&failure_print_count), static_cast<unsigned long long>(1));
                 if (print_index < 100) {  // only the first 100 failures across the whole run
                     printf("Reconstruction failed at message %llu (type %d) in symbol block %d\n", static_cast<unsigned long long>(i), static_cast<int>(message), blockIdx.x);
                 }
