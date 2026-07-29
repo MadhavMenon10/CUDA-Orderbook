@@ -44,13 +44,12 @@ class OrderBookSnapshot {
         inline size_t get_num_unique_symbols() const {return num_unique_symbols_;};
         inline size_t get_total_tick_count() const {return total_tick_count_;};
         inline size_t* get_tick_write_count() const {return tick_write_count_;};
-        inline size_t get_ticks_capacity() const {return ticks_capacity_;};
+        inline size_t get_ticks_capacity() const {return total_tick_count_;};
     private:
         OrderBookTick* ticks_; 
         size_t num_unique_symbols_;
         size_t total_tick_count_;
         size_t* tick_write_count_;
-        size_t ticks_capacity_;
 };
 
 // Following structs are created so that our reconstruction kernel doesn't take like 20 parameters

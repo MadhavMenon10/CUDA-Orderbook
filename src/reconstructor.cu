@@ -4,7 +4,6 @@ OrderBookSnapshot::OrderBookSnapshot(const SymbolCompactor& compacted_symbols, s
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&ticks_), sizeof(OrderBookTick) * total_message_count), "Allocate memory for ticks_");
     CUDAUtils::check_cuda_error(cudaMalloc(reinterpret_cast<void**>(&tick_write_count_), sizeof(size_t)), "Allocate tick_write_count_");
     CUDAUtils::check_cuda_error(cudaMemset(tick_write_count_, 0, sizeof(size_t)), "Initialise tick_write_count_ with 0");
-    ticks_capacity_ = total_message_count / 4;
 }
 
 OrderBookSnapshot::~OrderBookSnapshot() {
