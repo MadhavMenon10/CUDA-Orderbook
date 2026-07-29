@@ -46,9 +46,29 @@ If you have a NASDAQ Itch file on disc, execute the binary with
 ./bin/itch_parser path_to_file
 ```
 ## Languages and Tooling
+C++ was used for code on the host (CPU) while CUDA C++ was used for everything on the device (GPU).  CUB was used for radix sort and run-length-encoding used for compaction. Thrust was used to facilitate this.
 
 ## Directory Layout
-
+CUDA-Orderbook/
+  Makefile
+  includes/
+    types.hpp             message enum, length table, DecodedOrder, StrategyConfig
+    reader.hpp             ItchReader
+    decoder.hpp             ItchDecoder
+    soa.hpp                 SoaArrays
+    cuda_utils.hpp          CUDA error checking
+    hash_table.cuh          GPUHashTable + hash table kernels
+    symbol_compactor.cuh    SymbolCompactor
+    reconstructor.cuh       reconstruction structs + kernels
+    tick_compactor.cuh      TickCompactor, re-sorts ticks by symbol
+    backtester.cuh          BacktestResults, TickStreamData, run_strategy
+    results_analysis.hpp    host-side reporting
+  src/       matching .cpp/.cu files
+  build/     object files
+  bin/       final binary
+  data/      ITCH files (gitignored)
+  docs/
+    pics/   Used to store Nsight results for the README
 ## Pipeline
 
 ### Parsing the ITCH Feed
