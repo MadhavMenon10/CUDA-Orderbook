@@ -30,7 +30,6 @@ int main(int argc, char* argv[]) {
         while (itch_reader.get_next_message(scratch_memory.data(), scratch_memory.size(), message_size)) {
             ++message_count;
         }
-        std::cout << "Total messages: " << message_count << "\n";
         SoaArrays soa_arrays;
         soa_arrays.reserve(message_count);
         itch_reader.reset_state();
@@ -43,6 +42,7 @@ int main(int argc, char* argv[]) {
             }
             ++i;
         }
+        std::cout << "Total messages: " << soa_arrays.size() << "\n";
         size_t max_active_orders = 1000000; // Estimate
         GPUHashTable hash_table(max_active_orders);
         SymbolCompactor compacted_symbols(soa_arrays);
