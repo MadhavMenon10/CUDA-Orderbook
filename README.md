@@ -53,9 +53,23 @@ C++ was used for code on the host (CPU) while CUDA C++ was used for everything o
 ## Pipeline
 
 ### Parsing the ITCH Feed
-A custom `ItchReader` class and `ItchDecoder` namespace was created to parse ITCH files. 
+An average ITCH file can be >= 10 GB. Thus loading the entire file at once into memory, before starting any of the reconstructing and backtesting, can cause a severe bottleneck. Thus, A custom `ItchReader` class and `ItchDecoder` namespace was created to parse ITCH files. `ItchReader` keeps a fixed-size pinned buffer (set to 1 MB in `main.cu` to read chunks from the file, `ItchDecoder` decodes messages out of this window, and the buffer gets refilled as it is consumed. `ItchDecoder` decodes the message and stores its data into a struct of arrays (SoA) format, in order to keep data contiguous for the GPU. 
+
+Parsing then runs two full passes over the file. The first counts the number of messages so that we can allocate the right amount of memory for our `SoA` once, as opposed to growing and reallocating pinned memory repeatedly as messages come in. The second pass then decodes each message, adds its data into our `SoA`. For simplicity, only the following message types were handled:
+- Add
+- Execute
+- Execute With Price
+- Cancel
+- Delete
+- Replace
+
+We return a `std::optional<DecodedOrder>` for message types not handled.
+
+NASDAQ's sample files prefix every message with a 2-byte big-endian length field, which is not a part of the ITCH spec as this field is a property of how the sample archive packages messages for download, and not the ITCH protocol itself. Thus, `ItchReader` takes a `length_prefix_size` constructor argument for this, reads and skips that many bytes before the type byte, and cross-checks the resulting length against what the ITCH spec. A mismatch throws immediately with the exact byte position.
 
 ### GPU Hash Table
+
+
 
 ### Compacting by Symbols
 
