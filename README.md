@@ -7,7 +7,7 @@ A GPU pipeline that parses raw NASDAQ TotalView ITCH 5.0 market data, reconstruc
 
 ### Benchmarks
 
-The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  5.0 file available at the [NASDAQ Public Archive]([NASDAQ Public Archive](https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/))
+The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  5.0 file available at the [NASDAQ Public Archive](https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/)
 
 - 305,105,310 messages reconstructed in 69.5s (~4.4M msgs/sec)
 - 10,000 configs backtested in 83.8s.
