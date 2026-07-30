@@ -74,6 +74,12 @@ NASDAQ's sample files prefix every message with a 2-byte big-endian length field
 
 Not all messages contain the same data. For example, an `Add` order would include everything from the order ID to whether it was on the buy or sell side, while a `Delete` order would only include the order ID. Thus, a hash table is needed to remember all the parameters associated with an order. Reconstruction involves inserting, looking up, and deleting orders potentially hundreds of millions of times. Thus, the hash table was implemented entirely on the GPU to avoid round-trip memory accesses which would bottleneck the program. The downside of this is concurrency, as many warps can use the table at the same instant. To mitigate this, we used atomic operations to ensure that all warps agree on the state of the hash table at any given time.
 
+The hash table is sized at twice the number of `max_active_orders` in the orderbook. This leads to a load factor of about 50% which allows linear probe chains to be relatively short. We use two sentinel values to represent the states a given entry in the hash table can be
+
+- `UINT64_MAX`: A slot is empty
+- `UINT64_MAX - 1`: An order was used at this slot and then deleted
+
+A hash table insert treats either slot as an empty slot available to claim, while a lookup must treat `UINT64_MAX` as a stopping point as if the desired lookup order was in the table, it should exist at that index (either via linear probing or at the direct hashed index). 
 
 ### Compacting by Symbols
 
