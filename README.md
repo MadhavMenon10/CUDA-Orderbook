@@ -89,8 +89,15 @@ To do this, we use `cub::DeviceRadixSort::SortPairs` to sort two arrays: a proxy
 
 ### Reconstruction
 
+For reconstruction, we settled on assigning one warp to each symbol, and one block holding one warp. We used one warp per symbol because of the inherent causality inside a single symbol's message stream. For example, a `Cancel` message cannot be executed before the `Add` message it references exists. Thus, for a symbol, messages have to be processed strictly in the order that they come through. However, across symbols, there is no such constraint. For example, AAPL's messages have nothing to do with MSFT's messages and vice-versa. Thus, a warp was the natural execution unit for a symbol. We used one warp per block because reconstruction requires several states to live in shared memory like the best bid and the best ask. In CUDA, shared memory is scoped per block. Thus, if we had multiple warps in a block, it would be possible for one symbol to mutate the data associated with another symbol. Thus, it was natural to give one warp its own block.
+
+Within a given symbol, the work we do is naturally single-threaded and sequential. The parallelism behind this project comes from running potentially thousands of warps at once across symbols, not from spreading one message's update across 32 threads. All 32 threads collaborate when the orderbook is stored and queried. Bid and ask prices live in two separate arrays. Each thread owns a owns a small fixed-size local array of price levels, and which thread owns a given price is decided by a custom hashing function. Since a symbol routinely has more than 32 live prices and several hash to the thread, a lane's array is small enough that finding or claiming a slot in it is just a linear scan.
+
+After a message is processed, all 32 threads work to find the top 5 bid and ask levels. This is done via a warp shuffle in five rounds that halves the number of active threads each round (32 -> 16 -> 8 -> 4 -> 2 -> 1).
 
 ### Backtesting
+
+We settled on 10,000 different trading strategies 
 
 ## Design Choices
 
