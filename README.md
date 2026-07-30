@@ -83,7 +83,12 @@ A hash table insert treats either slot as an empty slot available to claim, whil
 
 ### Compacting by Symbols
 
+The raw parsed ITCH stream interleaves every symbol together in timestamp order, since that's the order they actually arrived in the file. `SymbolCompactor` groups it into contiguous per-symbol blocks, in device memory, without disturbing the relative order of messages within a symbol, so a warp assigned one symbol can read a sequential slice instead of scanning past every other symbol's data. 
+
+To do this, we use `cub::DeviceRadixSort::SortPairs` to sort two arrays: a proxy index array and `symbol_id`. We do this in two phases: the first phase sizes the required scratch memory and the second phase does the sort. The sorted index array becomes a permutation: position i in the output came from index `permutation[i]` in the input. This permutation drives a `thrust::gather` pass for each SoA field by pulling  `field[permutation[i]]` into position `i`. Then, `cub::DeviceRunLengthEncode::Encode` walks the sorted `symbol_id` array and finds each distinct symbol along with how many consecutive messages belong to it. A `thrust::exclusive_scan` over those counts finds the offset of each symbol, which is used by a warp during reconstruction to find its own slice.
+
 ### Reconstruction
+
 
 ### Backtesting
 
