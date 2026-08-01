@@ -276,6 +276,12 @@ __global__ void reconstruct(CompactedMessage messages, HashTableData hash_table_
         ask_levels[threadIdx.x][i].price = PRICE_EMPTY_SLOT_SENTINEL;
         ask_levels[threadIdx.x][i].quantity = 0;
     }
+    if (threadIdx.x < 5) { // Shared memory arrives uninitialised, so the first message of a symbol would otherwise compare its top-5 against whatever was left in that memory
+        last_bid_top5[threadIdx.x].price = PRICE_EMPTY_SLOT_SENTINEL;
+        last_bid_top5[threadIdx.x].quantity = 0;
+        last_ask_top5[threadIdx.x].price = PRICE_EMPTY_SLOT_SENTINEL;
+        last_ask_top5[threadIdx.x].quantity = 0;
+    }
     __syncthreads(); // So all threads finishing writing the sentinel value before price_levels is read from
     size_t symbol_idx = blockIdx.x; // One warp per symbol so one block gets assigned exactly one symbol
     size_t symbol_offset = messages.symbol_start_offsets[symbol_idx];
