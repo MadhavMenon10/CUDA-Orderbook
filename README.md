@@ -32,6 +32,15 @@ The following values come from testing on the 30/08/2019 NASDAQ TotalView-ITCH  
 
 Unfortunately, the GPU cloud instance does not support NVIDIA Nsight Compute `ncu`. This is common on most rented GPU containers due to driver security restrictions; an `ncu` analysis was thus ommitted.
 
+### CPU Baseline
+
+A GPU measurement on its own says very little, so `bin/cpu_baseline` runs the same two stages single-threaded on the host. It is deliberately not a port of the kernels. The GPU shards price levels across 32 lanes and caps each lane at `MAX_LEVELS_PER_LANE` because shared memory cannot grow once a kernel launches, and a CPU has no reason to carry a constraint that only ever came from the hardware. Thus the baseline does what a CPU implementation would actually do: an ordered map of price levels per symbol, and a `std::unordered_map` keyed by order ID in place of the open-addressed table. Both halves of the comparison were measured on the same H100 instance, so what follows is the GPU against that machine's host CPU and not against some other machine entirely.
+
+- Reconstruction: **453.3s** (**~673K msgs/sec**), so the GPU is **6.5x** faster
+- Backtesting: **~6.5 hours**, so the GPU is **~279x** faster
+
+The distance between those two numbers is the more interesting result. Backtesting is 10,000 configurations that never interact, so the GPU runs thousands of them at once while the CPU runs them one after another, and the speedup lands close to what raw parallelism should buy. Reconstruction does not behave that way. The two price level arrays alone consume 48,128 bytes of shared memory (`2 x 32 x 94 x 8`), and with the four top-5 arrays a block sits at 48,288 bytes, which is nearly the whole 48KB per-block budget. Very few blocks can therefore be resident on an SM at any one time, and since a block is only 32 threads wide to begin with, occupancy stays in the low single digits. On top of that, only lane 0 runs the message dispatch, so 31 of the 32 lanes idle through the part of the loop that actually mutates the book and wake up only for the top-5 reduction. The `MAX_LEVELS_PER_LANE` value that the Challenges section had to push to 94 for correctness is the same value holding reconstruction to 6.5x.
+
 ## Build
 
 Clone the repo and compile with
@@ -42,6 +51,13 @@ If you have a NASDAQ Itch file on disc, execute the binary with
 
 ```bash
 ./bin/itch_parser path_to_file
+```
+
+The CPU baseline is a separate binary that links against no CUDA at all, so it builds and runs on a machine with no GPU in it
+
+```bash
+make bin/cpu_baseline
+./bin/cpu_baseline path_to_file
 ```
 
 The CUDA paths in the Makefile are specific to the GPU cloud instance. You may have to change it to match your system.
