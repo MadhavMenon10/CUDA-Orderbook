@@ -1,5 +1,3 @@
-#include <iostream>
-#include <vector>
 #include "types.hpp"
 #include "reader.hpp"
 #include "decoder.hpp"
@@ -12,12 +10,14 @@
 #include "tick_compactor.cuh"
 #include "results_analysis.hpp"
 #include <chrono>
-
+#include <cstdlib>
+#include <iostream>
+#include <vector>
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "ITCH File Path is missing\n";
-        return 1;
+        return EXIT_FAILURE;
     }
     try {
         std::string file_path(argv[1]);
@@ -64,6 +64,6 @@ int main(int argc, char* argv[]) {
         BackTestResultsAnalysis::report_best_strategy(pnl_results, configs);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
-        return 1;
+        return EXIT_FAILURE;
     }
 }
